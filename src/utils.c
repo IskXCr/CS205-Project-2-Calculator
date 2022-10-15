@@ -3,6 +3,13 @@
 #include <ctype.h>
 #include <string.h>
 
+static void (*_handler_exc)(void) = NULL; /* Exception handler. */
+
+void init_utils_lib(void (*handler_exc)(void))
+{
+    _handler_exc = handler_exc;
+}
+
 /* Print the "out of memory" error and exit */
 void out_of_memory()
 {
@@ -13,7 +20,8 @@ void out_of_memory()
 void sap_warn(char *msg)
 {
     fprintf(stderr, "SAP error: %s\n", msg);
-    exit(1);
+    if (_handler_exc != NULL)
+        (*_handler_exc)();
 }
 
 /* Fetch the next token starting at *src until the first whitespace character or EOF */
@@ -28,5 +36,4 @@ char *fetch_token(char *src)
 
 char *fetch_expr(FILE *src)
 {
-    
 }

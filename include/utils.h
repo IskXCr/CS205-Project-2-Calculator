@@ -9,6 +9,8 @@
 
 /* Function prototypes */
 
+void init_utils_lib(void (*handler_exc)(void));
+
 void out_of_memory(void);
 
 void sap_warn(char *msg);

@@ -9,3 +9,4 @@ include_directories(./include)
 
 # add the executable
 add_executable(calculator ${DIR_SRCS})
+target_link_libraries(calculator m)

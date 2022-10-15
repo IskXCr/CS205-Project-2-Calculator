@@ -1,5 +1,5 @@
-/*  This file is the main program of the Simple Arithmetic Calculator.
-
+/*  This file is the main program of the Simple Arithmetic Program, acting
+    as a bridge to connect the user to the interface of the SAP virtual machine.
  *******************************************************************/
 
 #include "sapdefs.h"
@@ -7,6 +7,12 @@
 #include "global.h"
 #include "utils.h"
 #include "opt.h"
+
+#define DEBUG
+
+#ifdef DEBUG
+#include "test.h"
+#endif
 
 /* Definition of constants */
 int quiet = 0;
@@ -29,7 +35,7 @@ usage(const char *progname)
 static void
 version()
 {
-    printf("Simple basic calculator. VERSION: " VERSION "\nEngineering sample. Interactive mode only.\n");
+    printf("Simple Arithmetic Program, aka SAP. VERSION: " VERSION "\nEngineering sample. Interactive mode only.\n");
 }
 
 /* Process argument to apply the settings. */
@@ -111,5 +117,12 @@ int main(int argc, char **argv)
     parse_args(argc, argv);
     if (quiet != TRUE)
         version();
-    
+    void handle(void);
+    init_utils_lib(&handle);
+    test();
+}
+
+void handle(void)
+{
+    exit(1);
 }

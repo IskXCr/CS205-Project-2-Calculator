@@ -3,15 +3,25 @@
 #define _SAP_H
 
 typedef enum {
-    ENDOFLINE,
+    ENDOFSTATEMENT = 1,
     NUMBER,
     NAME,
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVISION,
+    MODULUS,
     SQRT,
     SIN,
     COS,
+    ARCTAN,
     EXP,
-    ARCT,
-    LN
+    POW,
+    LN,
+    ASSIGN,
+    LEQ,
+    EQ,
+    GER
 } token_type;
 
 #endif
