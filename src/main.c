@@ -18,6 +18,11 @@
 int quiet = FALSE;
 int debug = FALSE;
 
+#define _HISTORY_MAX_SIZE 10
+
+static char *history_buf[_HISTORY_MAX_SIZE] = {}; /* History buffer. All initialized to NULL. */
+static size_t history_count = 0;                 /* Next free position in history buffer. */
+
 #define OPT_CNT 4
 static option options[OPT_CNT] = {
     {'h', "help"},
@@ -130,6 +135,28 @@ parse_args(int argc, char **argv)
     }
 }
 
+/* Append a string to history, most often a command. */
+static void
+append_to_history(char *src)
+{
+    free(history_buf[history_count]);
+    history_buf[history_count] = src;
+    history_count = (history_count + 1) % _HISTORY_MAX_SIZE;
+}
+
+/* Show all the commands in the history stack, in chronological order. */
+static void
+show_history(void)
+{
+    printf("(Not fully implemented) Showing history of number %d\n: ", _HISTORY_MAX_SIZE);
+    for (int i = history_count - 1; i >= 0; --i)
+        printf("%s\n", history_buf[i]);
+    
+    for (int i = _HISTORY_MAX_SIZE - 1; i >= history_count; --i)
+        if(history_buf[i] != NULL)
+            printf("%s\n", history_buf[i]);
+}
+
 int main(int argc, char **argv)
 {
     /* Parse arguments first. */
@@ -138,6 +165,11 @@ int main(int argc, char **argv)
     {
         show_version();
         show_instruction();
+    }
+    if (debug)
+    {
+        test();
+        exit(0);
     }
 
     /* Init libraries */
@@ -148,19 +180,29 @@ int main(int argc, char **argv)
     char *buf = NULL;
     size_t size = 0;
 
-    while (getline(&buf, &size, stdin > 0))
+    while (getline(&buf, &size, stdin) > 0)
     {
         if (strcmp(buf, "quit") == 0)
             exit(0);
+        /* Some OS don't support history. */
+        else if (strcmp(buf, "history") == 0)
+            show_history();
 
         char **stmts = fetch_expr(buf); /* Will later be freed. */
         char **ptr = stmts;             /* Pointer to current statement */
 
         for (; *ptr != NULL; ptr++)
         {
+            printf("Fetched: %s\n", *ptr);
+        }
+
+        ptr = stmts;
+
+        for (; *ptr != NULL; ptr++)
+        {
             result = sap_execute(*ptr);
             printf("%s\n", sap_num2str(result));
-            sap_free_num(result);
+            sap_free_num(&result);
         }
 
         /* Clean up */

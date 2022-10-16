@@ -1,10 +1,13 @@
 /* Header file for SAP */
+
 #ifndef _SAP_H
 #define _SAP_H
 
 /* Included libraries */
 
 #include "number.h"
+
+/* Definitions */
 
 /* Function prototypes */
 

@@ -1,4 +1,5 @@
 /* The single file for all library inclusions and constants, definitions for sap.c */
+
 #ifndef _SAPDEFS_H
 #define _SAPDEFS_H
 
@@ -6,6 +7,7 @@
 #include "number.h"
 #include "lut.h"
 #include "parser.h"
+#include "stack.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -15,6 +17,7 @@
 #include <stddef.h>
 
 /* Definitions */
+
 #define VERSION "0.01 ALPHA"
 
 #ifdef TRUE

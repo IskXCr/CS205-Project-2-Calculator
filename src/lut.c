@@ -32,7 +32,8 @@ static unsigned int hash(unsigned char *str)
     return hash;
 }
 
-/* Create a new node. No validity check. */
+/* Create a new node. No validity check.
+   Key and val are all copied for backup. */
 static lut_node _lut_new_node(char *key, sap_num val)
 {
     lut_node tmp = (lut_node)malloc(sizeof(lut_node_struct));
@@ -96,6 +97,7 @@ void lut_free_table(lut_table *table)
 }
 
 /* Find the value of a key in the hashtable. Table must be valid and nonnull, and key must be nonnull.
+   Previous val is released, and new val is copied.
    Return NULL if such entry doesn't exist. */
 sap_num lut_find(lut_table table, char *key)
 {
@@ -106,7 +108,7 @@ sap_num lut_find(lut_table table, char *key)
     while (target != NULL)
         if (strcmp(target->key, key) == 0)
         {
-            result = target->val;
+            result = sap_copy_num(target->val);
             break;
         }
         else
@@ -126,7 +128,7 @@ void lut_insert(lut_table table, char *key, sap_num val)
         if (strcmp(target->key, key) == 0)
         {
             sap_free_num(&(target->val));
-            target->val = val;
+            target->val = sap_copy_num(val);
             break;
         }
         else
@@ -142,7 +144,7 @@ void lut_insert(lut_table table, char *key, sap_num val)
             *(table->entries + key0) = _lut_new_node(key, val);
 }
 
-/* Delete a value from hashtable. */
+/* Delete a value from hashtable. Accept no NULL key, but allows nonexisting entry to be deleted. */
 void lut_delete(lut_table table, char *key)
 {
     unsigned int key0 = hash(key) % (table->capacity);

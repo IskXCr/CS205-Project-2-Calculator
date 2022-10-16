@@ -1,11 +1,16 @@
 /* Source file for test routines. */
+
 #include "test.h"
 #include "number.h"
 #include "lut.h"
 #include "parser.h"
 #include "utils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+
+/* Function declarations */
 
 static void test_number(void);
 

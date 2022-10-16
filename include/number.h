@@ -5,6 +5,7 @@
 
 
 /* Definitions */
+
 #ifdef TRUE
 #undef TRUE
 #endif

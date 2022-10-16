@@ -1,9 +1,15 @@
 /* Header file for utilities used. */
+
+#ifndef _UTILS_H
+#define _UTILS_H
+
+
+/* Included libraries */
+
 #include <stdio.h>
 
 /* Constant definitions */
-#ifndef _UTILS_H
-#define _UTILS_H
+
 #define MAXTOKEN 255
 
 

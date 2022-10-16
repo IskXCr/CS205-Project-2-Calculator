@@ -76,14 +76,15 @@ char **fetch_expr(char *src)
         out_of_memory();
     memcpy(src0, src, srclen); /* We need a copy of strtok in order for this function to work. */
 
+    token = strtok(src0, delim);
     rw = result = (char **)malloc(len * sizeof(char *));
     if (result == NULL)
         out_of_memory();
 
-    do
+    while (token != NULL)
     {
         /* Reallocate memory if necessary. */
-        if (rw - result == len)
+        if (rw - result == len - 1)
         {
             len += _UTILS_EXPR_ARR_SIZE;
             result = (char **)realloc(result, len * sizeof(char *));
@@ -95,7 +96,9 @@ char **fetch_expr(char *src)
         /* Assign the token to a slot in the result array. */
         *rw++ = token;
         token = strtok(NULL, delim); /* Let strtok fetch the next token. */
-    } while (token != NULL);
+    }
+    *rw = NULL; /* Set the last element to NULL. */
+    
 
     /* Clean up */
     free(src0);

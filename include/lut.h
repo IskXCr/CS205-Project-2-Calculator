@@ -1,7 +1,10 @@
-/* Header file for the symbol lookup table. This library supports only one existing LUT in the same instance of a program. */
+/* Header file for the symbol lookup table. This library supports arbitrary number of LUTs in the same instance of a program. */
 
 #ifndef _LUT_H
 #define _LUT_H
+
+
+/* Included libraries */
 
 #include "number.h"
 #include <stddef.h>
@@ -17,16 +20,18 @@
 
 /* Struct declarations */
 
+/* Pointer to struct for holding properties of a node of linked list. */
 typedef struct lut_node_struct *lut_node;
 
 /* Struct for holding properties of a node of linked list. */
 typedef struct lut_node_struct
 {
-    char *key;                /* The keyword for the entry */
-    sap_num val;              /* The value for the entry */
+    char *key;                    /* The keyword for the entry */
+    sap_num val;                  /* The value for the entry */
     struct lut_node_struct *next; /* Point to the next element in case of Hash Collision */
 } lut_node_struct;
 
+/* Pointer to struct for holding properties of a hashtable. */
 typedef struct lut_table_struct *lut_table;
 
 /* Struct for holding properties of a hashtable. */

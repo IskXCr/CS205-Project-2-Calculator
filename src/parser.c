@@ -1,10 +1,11 @@
 /* Source file for SAP parser. */
-#include "parser.h"
 #include "sapdefs.h"
 #include "sap.h"
+#include "parser.h"
 #include "utils.h"
 
-#include <ctype.h>
+/* Global constants */
+static sap_token sentinel = NULL;
 
 /* Functions */
 
@@ -19,12 +20,140 @@ static char *_sap_op_to_str(char s)
     return p;
 }
 
-/* Get the precedence of an operator. */
-int sap_get_prec(sap_token_type type)
+/* Functions for expression evaluations. */
+
+/* Test if a token is operand */
+int sap_is_operand(sap_token token)
 {
-    switch(type)
+    switch (token->type)
     {
-    
+    case _SAP_VARIABLE:
+    case _SAP_NUMBER:
+    case _SAP_FUNC_CALL:
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Test if a token is operator */
+int sap_is_operator(sap_token token)
+{
+    switch (token->type)
+    {
+    case _SAP_END_OF_STMT:
+    case _SAP_STACK_SENTINEL:
+        return FALSE;
+
+    case _SAP_PAREN_R:
+        return FALSE;
+
+    default:
+        return !sap_is_operand(token);
+    }
+}
+
+/* Test if a token is a function*/
+int sap_is_func(sap_token token)
+{
+    switch (token->type)
+    {
+    case _SAP_SQRT:
+    case _SAP_SIN:
+    case _SAP_COS:
+    case _SAP_ARCTAN:
+    case _SAP_LN:
+    case _SAP_EXP:
+    case _SAP_FUNC_CALL:
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Get the IN precedence of an operator in the stack. */
+int sap_get_in_prec(sap_token token)
+{
+    switch (token->type)
+    {
+    case _SAP_END_OF_STMT:
+    case _SAP_STACK_SENTINEL:
+        return -10;
+
+    case _SAP_ASSIGN:
+        return 1;
+
+    case _SAP_EQ:
+    case _SAP_NEQ:
+        return 6;
+
+    case _SAP_LESS:
+    case _SAP_GREATER:
+    case _SAP_LEQ:
+    case _SAP_GEQ:
+        return 11;
+
+    case _SAP_ADD:
+    case _SAP_MINUS:
+        return 101;
+
+    case _SAP_MULTIPLY:
+    case _SAP_DIVIDE:
+    case _SAP_MODULO:
+        return 1001;
+
+    case _SAP_POWER:
+        return 10000;
+
+    case _SAP_PAREN_L:
+        return 0;
+
+    default:
+        return -1;
+    }
+}
+
+/* Get the OUT precedence of an operator out of the stack */
+int sap_get_out_prec(sap_token token)
+{
+    switch (token->type)
+    {
+    case _SAP_END_OF_STMT:
+    case _SAP_STACK_SENTINEL:
+        return -10;
+
+    case _SAP_ASSIGN:
+        return 2;
+
+    case _SAP_EQ:
+    case _SAP_NEQ:
+        return 5;
+
+    case _SAP_LESS:
+    case _SAP_GREATER:
+    case _SAP_LEQ:
+    case _SAP_GEQ:
+        return 10;
+
+    case _SAP_ADD:
+    case _SAP_MINUS:
+        return 100;
+
+    case _SAP_MULTIPLY:
+    case _SAP_DIVIDE:
+    case _SAP_MODULO:
+        return 1000;
+
+    case _SAP_POWER:
+        return 10001;
+
+    case _SAP_PAREN_L:
+        return 1000000;
+
+    default:
+        return -1;
     }
 }
 
@@ -64,6 +193,9 @@ static sap_token _sap_new_token(sap_token_type type, char *name, sap_num val, sa
     else
         tmp->arg_tokens = NULL;
 
+    /* Negation */
+    tmp->negate = FALSE;
+
     return tmp;
 }
 
@@ -72,6 +204,9 @@ static void _sap_free_token_array(sap_token **token);
 /* Delete a token node and release resources. */
 static void _sap_free_token(sap_token *token)
 {
+    if (*token == NULL)
+        return;
+    
     free((*token)->name);
     sap_free_num(&((*token)->val));
     if ((*token)->arg_tokens != NULL)
@@ -83,12 +218,22 @@ static void _sap_free_token(sap_token *token)
 /* Free a valid array of tokens, ended by _SAP_END_OF_STMT. */
 static void _sap_free_token_array(sap_token **token_array)
 {
+    if (*token_array == NULL)
+        return;
+    
     sap_token *start = *token_array;
     while ((*start)->type != _SAP_END_OF_STMT)
         _sap_free_token(start++);
     _sap_free_token(start); /* Free _SAP_END_OF_STMT */
     free(*token_array);
     *token_array = NULL;
+}
+
+/* Get a stack sentinel from parser. */
+sap_token sap_get_sentinel(void)
+{
+    if (sentinel == NULL)
+        sentinel = _sap_new_token(_SAP_STACK_SENTINEL, NULL, NULL, NULL);
 }
 
 /* Get the length of token_array for convenience. The length contains _SAP_END_OF_STMT. */
@@ -133,6 +278,9 @@ static sap_token _sap_parse_next_token(char **lineptr)
             case '/':
                 type = _SAP_DIVIDE;
                 break;
+            case '%':
+                type = _SAP_MODULO;
+                break;
             case '^':
                 type = _SAP_POWER;
                 break;
@@ -168,6 +316,15 @@ static sap_token _sap_parse_next_token(char **lineptr)
                 break;
             case ')':
                 type = _SAP_PAREN_R;
+                break;
+            case '!':
+                if (*++ptr == '=')
+                    type = _SAP_NEQ;
+                else
+                {
+                    --ptr;
+                    sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr));
+                }
                 break;
             default:
                 sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr));
@@ -206,6 +363,7 @@ static sap_token _sap_parse_next_token(char **lineptr)
         result = _sap_new_token(_SAP_NUMBER, NULL, tmp, NULL);
 
         /* Clean up. */
+        sap_free_num(&tmp);
         free(buf);
     }
     else /* A variable or a function call */
@@ -242,7 +400,10 @@ static sap_token _sap_parse_next_token(char **lineptr)
             else if (strcmp(buf, _SAP_TEXT_FUNC_EXP) == 0)
                 type = _SAP_EXP;
             else
+            {
+                type = _SAP_FUNC_CALL;
                 sap_warn("Unrecognized function: ", 1, buf);
+            }
 
             char *ptr3 = ptr + 1;
             while (*ptr != ')' && *ptr != '\0')
@@ -269,7 +430,7 @@ static sap_token _sap_parse_next_token(char **lineptr)
         else
         {
             /* New a result. */
-            result = _sap_new_token(_SAP_VAR_NAME, buf, NULL, NULL);
+            result = _sap_new_token(_SAP_VARIABLE, buf, NULL, NULL);
         }
 
         /* Clean up. */
@@ -290,6 +451,7 @@ static sap_token *sap_parse_expr_impl(char *src)
     sap_token *arr = (sap_token *)malloc(len * sizeof(sap_token));
     sap_token *newarr;    /* In case we need to realloc more memory. */
     sap_token *ptr = arr; /* Next available position. */
+    int negate = FALSE;   /* If TRUE in a loop, negate this operand. */
 
     if (arr == NULL)
         out_of_memory();
@@ -310,6 +472,24 @@ static sap_token *sap_parse_expr_impl(char *src)
 
         /* Fetch next token */
         next = _sap_parse_next_token(&src);
+
+        /* If the operator is a '-', and (if there is no previous token, or the previous token is an operator) */
+        if (next->type == _SAP_MINUS && (ptr <= arr || sap_is_operator(*ptr)))
+        {
+            negate = TRUE;
+            _sap_free_token(&next);
+            continue;
+        }
+
+        if (negate)
+        {
+            if (sap_is_operand(next))
+                next->negate = TRUE;
+            else
+                sap_warn("Invalid unary minus. Token after: ", 1, _sap_debug_token2text(next));
+            negate = FALSE;
+        }
+
         *ptr++ = next;
     } while (next->type != _SAP_END_OF_STMT);
 
@@ -323,6 +503,22 @@ sap_token *sap_parse_expr(char *src)
     return sap_parse_expr_impl(src);
 }
 
+/* Evaluate this token object to a number if possible. All related resource will be freed. */
+void sap_eval_token(sap_token token, sap_num val)
+{
+    if (!sap_is_operand(token))
+        return;
+
+    sap_free_num(&(token->val));
+    free(token->name);
+    token->name = NULL;
+    sap_free_tokens(&(token->arg_tokens));
+    token->negate = FALSE;
+    
+    token->type = _SAP_NUMBER;
+    token->val = sap_copy_num(val);
+}
+
 /* Free a valid array of tokens that ends with _SAP_END_OF_STMT. */
 void sap_free_tokens(sap_token **array)
 {
@@ -332,7 +528,7 @@ void sap_free_tokens(sap_token **array)
 /* Debug functions. They are forbidden to use in production environments. */
 
 /* (Deprecated) Print token info for debug use. This function is not strictly written and lacks generosity.
-   Forbidden to use in production. 
+   Forbidden to use in production.
    The upper bound length for subexpressions is capped at 10000, otherwise segmentation fault. */
 char *_sap_debug_token2text(sap_token token)
 {
@@ -368,8 +564,9 @@ char *_sap_debug_token2text(sap_token token)
             free(sub_token);
         } while ((*next)->type != _SAP_END_OF_STMT);
     }
-    sprintf(buf, "{Token type=%d, token name=%s, token val=%s, arguments=[%s]}",
+    sprintf(buf, "{Token type=%d, negate=%d, token name=%s, token val=%s, arguments=[%s]}",
             token->type,
+            token->negate,
             token->name == NULL ? "NULL" : token->name,
             sap_num2str(token->val),
             buf_arg == NULL ? "NULL" : buf_arg);
