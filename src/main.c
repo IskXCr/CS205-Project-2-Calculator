@@ -15,13 +15,15 @@
 #endif
 
 /* Definition of constants */
-int quiet = 0;
+int quiet = FALSE;
+int debug = FALSE;
 
-#define OPT_CNT 3
+#define OPT_CNT 4
 static option options[OPT_CNT] = {
     {'h', "help"},
     {'q', "quiet"},
-    {'v', "version"}};
+    {'v', "version"},
+    {'d', "debug"}};
 
 static void
 usage(const char *progname)
@@ -33,9 +35,22 @@ usage(const char *progname)
 }
 
 static void
-version()
+show_version()
 {
-    printf("Simple Arithmetic Program, aka SAP. VERSION: " VERSION "\nEngineering sample. Interactive mode only.\n");
+    printf("Simple Arithmetic Program, aka SAP. VERSION: " VERSION "\n"
+           "Engineering sample. Interactive mode only.\n");
+}
+
+static void
+show_instruction()
+{
+    printf("Enter \"quit\" to exit.\n");
+}
+
+static void
+show_debug()
+{
+    printf("==========>CAUTION: DEBUG mode enabled.\n");
 }
 
 /* Process argument to apply the settings. */
@@ -51,8 +66,11 @@ _process_arg_abbr(char arg, char *progname)
         quiet = TRUE;
         break;
     case 'v':
-        version();
+        show_version();
         exit(0);
+    case 'd':
+        show_debug();
+        debug = TRUE;
     default:
         usage(progname);
         exit(1);
@@ -114,15 +132,40 @@ parse_args(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    /* Parse arguments first. */
     parse_args(argc, argv);
     if (quiet != TRUE)
-        version();
-    void handle(void);
-    init_utils_lib(&handle);
-    test();
-}
+    {
+        show_version();
+        show_instruction();
+    }
 
-void handle(void)
-{
-    exit(1);
+    /* Init libraries */
+    sap_init_lib();
+
+    /* Start executing */
+    sap_num result = NULL;
+    char *buf = NULL;
+    size_t size = 0;
+
+    while (getline(&buf, &size, stdin > 0))
+    {
+        if (strcmp(buf, "quit") == 0)
+            exit(0);
+
+        char **stmts = fetch_expr(buf); /* Will later be freed. */
+        char **ptr = stmts;             /* Pointer to current statement */
+
+        for (; *ptr != NULL; ptr++)
+        {
+            result = sap_execute(*ptr);
+            printf("%s\n", sap_num2str(result));
+            sap_free_num(result);
+        }
+
+        /* Clean up */
+        free_expr_array(&stmts);
+        free(buf);
+        buf = NULL;
+    }
 }

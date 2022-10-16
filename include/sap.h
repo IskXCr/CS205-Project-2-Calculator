@@ -1,27 +1,17 @@
-/* Header file for defining tokens for the parser */
+/* Header file for SAP */
 #ifndef _SAP_H
 #define _SAP_H
 
-typedef enum {
-    ENDOFSTATEMENT = 1,
-    NUMBER,
-    NAME,
-    ADD,
-    SUBTRACT,
-    MULTIPLY,
-    DIVISION,
-    MODULUS,
-    SQRT,
-    SIN,
-    COS,
-    ARCTAN,
-    EXP,
-    POW,
-    LN,
-    ASSIGN,
-    LEQ,
-    EQ,
-    GER
-} token_type;
+/* Included libraries */
+
+#include "number.h"
+
+/* Function prototypes */
+
+void sap_init_lib(void);
+
+sap_num sap_execute(char *stmt);
+
+sap_num sap_reset_all(void);
 
 #endif

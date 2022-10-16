@@ -30,6 +30,7 @@ typedef enum
 
 typedef struct sap_struct *sap_num;
 
+/* Struct for holding properties and pointers to storage of a sap_number */
 typedef struct sap_struct
 {
     sign n_sign;  /* For the sign of the number. To specify, zero has positive sign. */
@@ -62,7 +63,7 @@ extern sap_num _pi_;
 
 /* Function prototypes */
 
-void sap_init_lib(void);
+void sap_init_number_lib(void);
 
 sap_num sap_new_num(int length, int scale);
 
@@ -91,6 +92,8 @@ int sap_is_near_zero(sap_num op, int scale);
 int sap_is_neg(sap_num op);
 
 int sap_compare(sap_num op1, sap_num op2);
+
+void sap_negate(sap_num op);
 
 sap_num sap_add(sap_num op1, sap_num op2, int scale_min);
 

@@ -3,5 +3,6 @@
 #define _GLOBAL_H
 
 extern int quiet;
+extern int debug;
 
 #endif

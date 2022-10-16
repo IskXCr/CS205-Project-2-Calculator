@@ -6,7 +6,7 @@
    This library also provides utilities for outputting numbers and reading numbers.
 
    The major reference for this library is GNU bc program. A part of this library
-   may be seen as a subset for the library used in GNU bc. However, the implementation is completely rewritten
+   may be seen as a subset for the library used in GNU bc. However, the implementation is completely written from scratch
    to satisfy the specific purpose (as a simple subset and include some math functions). */
 
 #include "number.h"
@@ -34,8 +34,8 @@
 sap_num _zero_;
 sap_num _one_;
 sap_num _two_;
-sap_num _e_;
-sap_num _pi_;
+sap_num _e_;  /* Math constant with limited precision. */
+sap_num _pi_; /* Math constant with limited precision. */
 
 /* Negate the sign and return */
 static sign _sap_negate(sign op) { return op == POS ? NEG : POS; }
@@ -95,7 +95,7 @@ static void _sap_truncate(sap_num op, int scale, int round)
     op->n_ptr = op->n_val = new_ptr;
 }
 
-/* Get a replicate of the number for thread safety. */
+/* Get a replicate of the number, mainly for thread safety. */
 static sap_num _sap_replicate_num(sap_num op)
 {
     sap_num tmp = sap_new_num(op->n_len, op->n_scale);
@@ -104,8 +104,9 @@ static sap_num _sap_replicate_num(sap_num op)
     return tmp;
 }
 
-/* Call this before initialize the whole library. */
-void sap_init_lib(void)
+/* Initialize the whole number library.
+   This function must be called only once during the execution or memory leak may occur. */
+void sap_init_number_lib(void)
 {
     _zero_ = sap_new_num(1, 0);
     _one_ = sap_new_num(1, 0);
@@ -117,7 +118,7 @@ void sap_init_lib(void)
 }
 
 static sap_num _sap_free_list = NULL; /* This linked list is used to prevent frequent malloc() operation and
-                                         facilitate the reuse of the structure. */
+                                         facilitate reuses of the structure. */
 
 /* new_num allocates a number and sets fields to known values. Initially it is 0.
    The storage allocated for n_ptr is initialized and the fields are all set to 0. */
@@ -233,7 +234,7 @@ sap_num sap_str2num(char *ptr)
     return tmp;
 }
 
-/* This function converts double to its closest sap_num. */
+/* This function converts double to its closest sap_num. Caution: NaN and Inf are not supported. */
 sap_num sap_double2num(double val)
 {
     char *p = (char *)malloc(300);
@@ -265,6 +266,8 @@ char *sap_num2str(sap_num op)
     if (op == NULL || sap_is_zero(op))
     {
         tmp = (char *)malloc(2);
+        if (tmp == NULL)
+            out_of_memory();
         *tmp = '0';
         *(tmp + 1) = '\0';
         return tmp;
@@ -461,6 +464,12 @@ int sap_compare(sap_num op1, sap_num op2)
     return _sap_compare_impl(op1, op2, TRUE);
 }
 
+/* Negate the operand. */
+void sap_negate(sap_num op)
+{
+    op->n_sign = _sap_negate(op->n_sign);
+}
+
 /* Internal implementation for adding two numbers, assuming they have the same sign.
    Requires scale_min to add extra digits for the result. The sign of the result is specified. */
 static sap_num _sap_add_impl(sap_num op1, sap_num op2, int scale_min, sign op_sign)
@@ -582,12 +591,15 @@ static sap_num _sap_sub_impl(sap_num op1, sap_num op2, int scale_min, sign op_si
         if (op2->n_len < tmp->n_len)
             *(tmp->n_val + tmp->n_len - op2->n_len - 1) -= borrow;
         else
-            sap_warn("Internal error: subtraction_impl performed on invalid operands.");
+        {
+            sap_free_num(&tmp);
+            sap_warn("Internal error: subtraction_impl performed on invalid operands: ", 3, sap_num2str(op1), " and ", sap_num2str(op2));
+        }
     _sap_normalize(tmp);
     return tmp;
 }
 
-/* Add two numbers. */
+/* Add two numbers and return a new number as the result. */
 sap_num sap_add(sap_num op1, sap_num op2, int scale_min)
 {
     if (op1->n_sign == op2->n_sign)
@@ -609,7 +621,7 @@ sap_num sap_add(sap_num op1, sap_num op2, int scale_min)
     }
 }
 
-/* Subtract two numbers. */
+/* Subtract two numbers and return a new number as the result. */
 sap_num sap_sub(sap_num op1, sap_num op2, int scale_min)
 {
     if (op1->n_sign != op2->n_sign)
@@ -778,7 +790,8 @@ static sap_num _sap_mul_impl(sap_num op1, sap_num op2, int scale)
     return result;
 }
 
-/* Multiply two numbers. The fractional part will be truncated to the size. (Must be larger than 0). */
+/* Multiply two numbers. The fractional part will be truncated to the size. (Must be larger than 0).
+   Return a new number as the result. */
 sap_num sap_mul(sap_num op1, sap_num op2, int scale)
 {
     return _sap_mul_impl(op1, op2, scale);
@@ -808,7 +821,7 @@ static void _sap_self_increase(sap_num op1, int int_offset)
         }
     }
     if (carry == 1)
-        sap_warn("Self increase error: storage not enough.");
+        sap_warn("Self increase error: storage not enough: ", 1, sap_num2str(op1));
 }
 
 /* Internal simple division for handling small numbers. High complexity. Signs are ignored. */
@@ -816,7 +829,7 @@ static sap_num _sap_simple_high_prec_div(sap_num dividend, sap_num divisor, int 
 {
     if (sap_is_zero(divisor))
     {
-        sap_warn("0 divisor detected.");
+        sap_warn("0 divisor detected: ", 3, sap_num2str(dividend), " / ", sap_num2str(divisor));
         return sap_copy_num(_zero_);
     }
 
@@ -870,7 +883,8 @@ static sap_num _sap_div_impl(sap_num dividend, sap_num divisor, int scale)
     return result;
 }
 
-/* Divide dividend by divisor. The fractional part will be truncated to the size. (Must be larger than 0). */
+/* Divide dividend by divisor. The fractional part will be truncated to the size. (Must be larger than 0).
+   Return a new number as the result. */
 sap_num sap_div(sap_num dividend, sap_num divisor, int scale)
 {
     return _sap_div_impl(dividend, divisor, scale);
@@ -882,7 +896,7 @@ static void _sap_simple_divmod(sap_num dividend, sap_num divisor, sap_num *quoti
 {
     if (sap_is_zero(divisor))
     {
-        sap_warn("0 divisor detected.");
+        sap_warn("0 divisor detected: ", 3, sap_num2str(dividend), " / ", sap_num2str(divisor));
         *quotient = sap_copy_num(_zero_);
         *remainder = sap_copy_num(_zero_);
         return;
@@ -920,7 +934,8 @@ static sap_num _sap_mod_impl(sap_num dividend, sap_num divisor, int scale)
     return remainder;
 }
 
-/* Divide dividend by divisor. */
+/* Divide dividend by divisor. 
+   Return a new number as the result.*/
 sap_num sap_mod(sap_num dividend, sap_num divisor, int scale)
 {
     return _sap_mod_impl(dividend, divisor, scale);
@@ -935,7 +950,8 @@ static void _sap_divmod_impl(sap_num dividend, sap_num divisor, sap_num *quotien
     _sap_truncate(*remainder, scale, FALSE);
 }
 
-/* Divide dividend by divisor, get both quotient and remainder. */
+/* Divide dividend by divisor, get both quotient and remainder. 
+   Return a new number as the result.*/
 void sap_divmod(sap_num dividend, sap_num divisor, sap_num *quotient, sap_num *remainder, int scale)
 {
     _sap_divmod_impl(dividend, divisor, quotient, remainder, scale);
@@ -947,7 +963,7 @@ static sap_num _sap_sqrt_impl(sap_num op, int scale)
     /* Skipping some simple situations. */
     if (sap_is_neg(op))
     {
-        sap_warn("Function SQRT performed on negative operand.");
+        sap_warn("Function SQRT performed on negative operand: ", 1, sap_num2str(op));
         return sap_copy_num(_zero_);
     }
     if (sap_is_zero(op))
@@ -1002,7 +1018,8 @@ static sap_num _sap_sqrt_impl(sap_num op, int scale)
     return cguess;
 }
 
-/* Calculate square root of op. op must be positive, or the output will be 0. */
+/* Calculate square root of op. op must be positive, or the output will be 0.
+   Return a new number as the result. */
 sap_num sap_sqrt(sap_num op, int scale)
 {
     return _sap_sqrt_impl(op, scale);
@@ -1019,7 +1036,8 @@ static sap_num _sap_sin_impl(sap_num op, int scale)
     return result;
 }
 
-/* Calculate sin(op) in radians. Currently the precision is limited. */
+/* Calculate sin(op) in radians. Currently the precision is limited.
+   Return a new number as the result. */
 sap_num sap_sin(sap_num op, int scale)
 {
     return _sap_sin_impl(op, scale);
@@ -1034,7 +1052,8 @@ static sap_num _sap_cos_impl(sap_num op, int scale)
     return result;
 }
 
-/* Calculate cos(op) in radians. Currently the precision is limited. */
+/* Calculate cos(op) in radians. Currently the precision is limited.
+   Return a new number as the result. */
 sap_num sap_cos(sap_num op, int scale)
 {
     return _sap_cos_impl(op, scale);
@@ -1049,7 +1068,8 @@ static sap_num _sap_arctan_impl(sap_num op, int scale)
     return result;
 }
 
-/* Calculate arctan(op) in radians. Currently the precision is limited. */
+/* Calculate arctan(op) in radians. Currently the precision is limited.
+   Return a new number as the result. */
 sap_num sap_arctan(sap_num op, int scale)
 {
     return _sap_arctan_impl(op, scale);
@@ -1064,7 +1084,8 @@ static sap_num _sap_ln_impl(sap_num op, int scale)
     return result;
 }
 
-/* Calculate ln(op). Currently the precision is limited. */
+/* Calculate ln(op). Currently the precision is limited.
+   Return a new number as the result. */
 sap_num sap_ln(sap_num op, int scale)
 {
     return _sap_ln_impl(op, scale);
@@ -1076,7 +1097,7 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
     /* Process simple situations first. */
     if (expo->n_scale > 0)
     {
-        sap_warn("Non integer exponent.");
+        sap_warn("Non integer exponent: ", 3, sap_num2str(base), " ^ ", sap_num2str(expo));
         return sap_copy_num(_zero_);
     }
     if (sap_compare(expo, _zero_) == 0)
@@ -1093,8 +1114,8 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
 
     /* Initialize variables. */
     int rscale = MAX(base->n_scale, scale);
-    int cscale = rscale * sap_num2int(expo);  /* It is easy to accumulate errors when a wrong scale is selected. 
-                                                 Try to maximize the scale here. */
+    int cscale = rscale * sap_num2int(expo); /* It is easy to accumulate errors when a wrong scale is selected.
+                                                Try to maximize the scale here. */
     int do_reverse = FALSE;
     result = _sap_replicate_num(base);
     expo0 = _sap_replicate_num(expo);
@@ -1135,13 +1156,15 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
     return result;
 }
 
-/* Calculate base^expo. Expo must be a integer. */
+/* Calculate base^expo. Expo must be a integer.
+   Return a new number as the result. */
 sap_num sap_raise(sap_num base, sap_num expo, int scale)
 {
     return _sap_raise_impl(base, expo, scale);
 }
 
-/* Calculate exp(op). Op must be a valid integer. Currently the precision is limited. */
+/* Calculate exp(op). Op must be a valid integer. Currently the precision is limited.
+   Return a new number as the result. */
 sap_num sap_exp(sap_num expo, int scale)
 {
     return sap_raise(_e_, expo, scale);
