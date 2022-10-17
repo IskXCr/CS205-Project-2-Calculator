@@ -27,9 +27,9 @@ The following features are implemented to illustrate the need:
 
    c. ***variable assignments***
 
-   d. ***comparison operators*** (evaluates to 1 if ***true***, 0 if ***false***
+   d. ***comparison operators*** (evaluates to 1 if ***true***, 0 if ***false***)
 
-4. History. Press Up/Down to select a history to enter. (***Currently only supports using command "history" to show recent history***, because OS interfaces differ.)
+4. History. *Press Up/Down to select a history to enter*. (***Currently only supports using command "history" to show recent history***, because OS interfaces differ.)
 
 5. Efficient algorithms to speed up the calculation.
    
@@ -65,7 +65,7 @@ The following algorithms and libraries, methods are **implemented** or **applied
 
 5. **Clear Structure**:
 
-   a. Every source file (except for main) has its corresponding header file that *declares exposed function prototypes, i.e. APIs, defines constants, and uses* ``#ifndef`` *to handle duplicated header inclusions*.
+   a. Every source file (except for main) has its corresponding header file that *declares exposed function prototypes, i.e. APIs, defines constants, and uses* ``#ifndef`` *to handle duplicated header inclusions*. ***Minimum hardcoded constants except for ``int_size`` iterators and etc.***
 
    b. Every function is commented along with detailed explanations on algorithms and different test branches.
 
@@ -829,7 +829,7 @@ Input: sin(1.20)
 Output: 0.93
 ```
 
-*Other test cases for different libraries are included in ``test.c`` file, which contains some common test routines.* Call ``test()`` in the main function to see the result. You can manually test the program by ``git clone`` and use ``cmake`` to build the executable.
+*Other test cases for different libraries are included in ``test.c`` file, which contains some common test routines.* Call ``test()`` in the main function to see the result. You can manually test the program by ``git clone`` and use ``cmake`` to build the executable. ***Except for history selection, all other parts are fully implemented.***
 
 ## Part 4 - Difficulties & Solutions
 
