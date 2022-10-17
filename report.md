@@ -15,7 +15,9 @@ The whole project is written in ``C``.
 
 The following features are implemented to illustrate the need:
 
-1. Interactive direct calculation from expressions involving 
+1. Robustness. Recover from wrong input. Restore internal states and release resources upon wrong input.
+
+2. Interactive direct calculation from expressions involving 
 
    a. *numbers in* ***arbitrary precision***
 
@@ -25,9 +27,9 @@ The following features are implemented to illustrate the need:
 
    d. ***comparison operators*** (evaluates to 1 if ***true***, 0 if ***false***
 
-2. History. Press Up/Down to select a history to enter.
+3. History. Press Up/Down to select a history to enter. (***Currently only supports using command "history" to show recent history***, because OS interfaces differ.)
 
-3. Efficient algorithms to speed up the calculation.
+4. Efficient algorithms to speed up the calculation.
 
 The following algorithms and libraries are **implemented** to speed up and ensure the correctness and efficiency of the program.
 

@@ -21,7 +21,7 @@ int debug = FALSE;
 #define _HISTORY_MAX_SIZE 10
 
 static char *history_buf[_HISTORY_MAX_SIZE] = {}; /* History buffer. All initialized to NULL. */
-static size_t history_count = 0;                 /* Next free position in history buffer. */
+static int history_count = 0;                     /* Next free position in history buffer. */
 
 #define OPT_CNT 4
 static option options[OPT_CNT] = {
@@ -148,13 +148,14 @@ append_to_history(char *src)
 static void
 show_history(void)
 {
-    printf("(Not fully implemented) Showing history of number %d\n: ", _HISTORY_MAX_SIZE);
-    for (int i = history_count - 1; i >= 0; --i)
-        printf("%s\n", history_buf[i]);
-    
-    for (int i = _HISTORY_MAX_SIZE - 1; i >= history_count; --i)
-        if(history_buf[i] != NULL)
-            printf("%s\n", history_buf[i]);
+    printf("[History] (Not fully implemented) Showing history of number %d\n", _HISTORY_MAX_SIZE);
+    for (int i = history_count; i<_HISTORY_MAX_SIZE; ++i)
+        if (history_buf[i] != NULL)
+            printf("%s", history_buf[i]);
+    for (int i = 0; i < history_count; ++i)
+        if (history_buf[i] != NULL)
+            printf("%s", history_buf[i]);
+    printf("[History] Completed.\n");
 }
 
 int main(int argc, char **argv)
@@ -182,32 +183,38 @@ int main(int argc, char **argv)
 
     while (getline(&buf, &size, stdin) > 0)
     {
-        if (strcmp(buf, "quit") == 0)
+        if (strstr(buf, "quit") != 0 && buf[0] == 'q')
             exit(0);
         /* Some OS don't support history. */
-        else if (strcmp(buf, "history") == 0)
-            show_history();
-
-        char **stmts = fetch_expr(buf); /* Will later be freed. */
-        char **ptr = stmts;             /* Pointer to current statement */
-
-        // Debug: Print all fetched statements
-        // for (; *ptr != NULL; ptr++)
-        // {
-        //     printf("Fetched: %s\n", *ptr);
-        // }
-        // ptr = stmts;
-
-        for (; *ptr != NULL; ptr++)
+        else if (strstr(buf, "history") != 0 && buf[0] == 'h')
         {
-            result = sap_execute(*ptr);
-            printf("%s\n", sap_num2str(result));
-            sap_free_num(&result);
+            show_history();
+        }
+        else
+        {
+            char **stmts = fetch_expr(buf); /* Will later be freed. */
+            char **ptr = stmts;             /* Pointer to current statement */
+
+            // Debug: Print all fetched statements
+            // for (; *ptr != NULL; ptr++)
+            // {
+            //     printf("Fetched: %s\n", *ptr);
+            // }
+            // ptr = stmts;
+
+            for (; *ptr != NULL; ptr++)
+            {
+                result = sap_execute(*ptr);
+                printf("%s\n", sap_num2str(result));
+                sap_free_num(&result);
+            }
+
+            /* Clean up */
+            free_expr_array(&stmts);
         }
 
         /* Clean up */
-        free_expr_array(&stmts);
-        free(buf);
+        append_to_history(buf);
         buf = NULL;
     }
 }
