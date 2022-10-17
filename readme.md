@@ -39,9 +39,11 @@ The following features are implemented to illustrate the need:
    
 8. Support numbers with precision up to the upper bound of ``int`` type. (2^31 - 1). Dynamically allocated memory for use, and the upper bound is easy to modify (by modifying iterators in ``number.h``). All other data structures used can dynamically allocate memory.
    
-9. Provided a ``number.h`` and a ``parser.h`` library that can be used to parse an expression into tokens. Provided ``sap.h`` to evaluate an expression recursively.
+9. Provided a ``number.h`` and a ``parser.h`` library that can be used to parse an expression into tokens. Provided ``sap.h`` to evaluate an expression recursively. There are also ``stack.h``, ``lut.h`` (Lookup Table) that can be reused.
 
-The following algorithms and libraries are **implemented** to speed up and ensure the correctness and efficiency of the program.
+10. The whole program uses ``global.h`` to integrate global constants, ``sapdefs.h`` to declare common include libraries for SAP major routines.
+
+The following algorithms and libraries, methods are **implemented** or **applied** to speed up and ensure the correctness and efficiency of the program.
 
 1. ``number.h``: An whole arbitrary precision number **library** that supports 
 
