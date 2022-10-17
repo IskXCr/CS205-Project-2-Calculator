@@ -1,4 +1,9 @@
 # Simple Arithmetic Program
+### Demo expressions:
+```
+Input: x = 3; y = 5; x > y; x <= y; sqrt(x = (y == 3)); sin(x) + y + cos(y);...
+```
+
 ### Supported Features
 1. Direct calculate from expressions involving numerics, common math functions and variables.
 2. Support arithmetic expressions. Boolean expressions evaluate to 1 if true. Variables evaluate to *true* in a boolean expression if its value is not 0.
