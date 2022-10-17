@@ -14,6 +14,8 @@
 #endif
 #define MAX(a, b) (((a) >= (b)) ? (a) : (b))
 
+#define _TRANS_FUNC_MIN_SCALE 3
+
 /* Global constants */
 static lut_table symbols;
 
@@ -174,22 +176,22 @@ static sap_num _sap_evaluate(sap_token **tokens)
             switch ((*ptr)->type)
             {
             case _SAP_SQRT:
-                tmp1 = sap_sqrt(tmp0, tmp0->n_scale);
+                tmp1 = sap_sqrt(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_SIN:
-                tmp1 = sap_sin(tmp0, tmp0->n_scale);
+                tmp1 = sap_sin(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_COS:
-                tmp1 = sap_cos(tmp0, tmp0->n_scale);
+                tmp1 = sap_cos(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_ARCTAN:
-                tmp1 = sap_arctan(tmp0, tmp0->n_scale);
+                tmp1 = sap_arctan(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_LN:
-                tmp1 = sap_ln(tmp0, tmp0->n_scale);
+                tmp1 = sap_ln(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_EXP:
-                tmp1 = sap_exp(tmp0, tmp0->n_scale);
+                tmp1 = sap_exp(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_FUNC_CALL:
             default:
