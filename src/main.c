@@ -191,12 +191,12 @@ int main(int argc, char **argv)
         char **stmts = fetch_expr(buf); /* Will later be freed. */
         char **ptr = stmts;             /* Pointer to current statement */
 
-        for (; *ptr != NULL; ptr++)
-        {
-            printf("Fetched: %s\n", *ptr);
-        }
-
-        ptr = stmts;
+        // Debug: Print all fetched statements
+        // for (; *ptr != NULL; ptr++)
+        // {
+        //     printf("Fetched: %s\n", *ptr);
+        // }
+        // ptr = stmts;
 
         for (; *ptr != NULL; ptr++)
         {

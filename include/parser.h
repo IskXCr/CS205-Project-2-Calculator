@@ -109,7 +109,7 @@ int sap_get_token_arr_length(sap_token *array);
 
 sap_token *sap_parse_expr(char *src);
 
-void sap_eval_token(sap_token token, sap_num val);
+void sap_token_trans2num(sap_token token, sap_num val);
 
 void sap_free_tokens(sap_token **array);
 
@@ -117,5 +117,7 @@ void sap_free_tokens(sap_token **array);
 /* Debug function prototypes. They are forbidden to use in production environments. */
 
 char *_sap_debug_token2text(sap_token token);
+
+void _sap_debug_print_token_arr(sap_token *token);
 
 #endif

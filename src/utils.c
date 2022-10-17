@@ -67,6 +67,8 @@ char **fetch_expr(char *src)
     static const char delim[] = ";\n";
     char **result; /* Store the result array. */
     char **rw;     /* Next available position in the result array */
+    char *tmp;     /* Store memory allocation result */
+    int len0;      /* Store token length */
     char *token;
 
 
@@ -86,19 +88,24 @@ char **fetch_expr(char *src)
         /* Reallocate memory if necessary. */
         if (rw - result == len - 1)
         {
-            len += _UTILS_EXPR_ARR_SIZE;
-            result = (char **)realloc(result, len * sizeof(char *));
+            result = (char **)realloc(result, (len + _UTILS_EXPR_ARR_SIZE) * sizeof(char *));
             if (result == NULL)
                 out_of_memory();
-            rw = result + len;
+            rw = result + len - 1;
+            len += _UTILS_EXPR_ARR_SIZE;
         }
 
         /* Assign the token to a slot in the result array. */
-        *rw++ = token;
+        len0 = strlen(token) + 1;
+        tmp = (char *)malloc(len0);
+        if (tmp == NULL)
+            out_of_memory();
+        memcpy(tmp, token, len0);
+
+        *rw++ = tmp;
         token = strtok(NULL, delim); /* Let strtok fetch the next token. */
     }
     *rw = NULL; /* Set the last element to NULL. */
-    
 
     /* Clean up */
     free(src0);

@@ -60,18 +60,20 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
     /* While the tokens array is not empty */
     while ((*tptr)->type != _SAP_END_OF_STMT)
     {
+        // debug
+        // printf("[Postfix] Processing token: %s\n", _sap_debug_token2text(*tptr));
         rlen++;
         if (sap_is_operand(*tptr)) /* If the input is an operand */
             *rptr++ = *tptr;
         else if (sap_is_operator(*tptr)) /* If the input is an operator */
         {
             if (sap_stack_empty(stk) || sap_get_out_prec(*tptr) > sap_get_in_prec(sap_stack_top(stk)))
-                sap_stack_push(stk, *tptr++);
+                sap_stack_push(stk, *tptr);
             else
             {
                 while (sap_stack_has_element(stk) && sap_get_out_prec(*tptr) < sap_get_in_prec(sap_stack_top(stk)))
                     *rptr++ = sap_stack_pop(stk);
-                sap_stack_push(stk, *tptr++);
+                sap_stack_push(stk, *tptr);
             }
         }
         else if ((*tptr)->type == _SAP_PAREN_R) /* If the input is right parenthese */
@@ -88,6 +90,7 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
             }
             sap_stack_pop(stk);
         }
+        tptr++;
     }
 
     /* Pop the remaining operators */
@@ -95,7 +98,7 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
         *rptr++ = sap_stack_pop(stk);
 
     /* Clean up */
-    *rptr = *tptr;
+    *rptr = *tptr; /* IMPORTANT: _SAP_END_OF_STMT placed. */
     resultr = (sap_token *)realloc(result, (rlen + 1) * sizeof(sap_token));
     if (resultr != NULL) /* If successfully reallocated */
         result = resultr;
@@ -108,15 +111,15 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
    The returned pointer is the token itself. */
 static sap_token _sap_evaluate_operand(sap_token token)
 {
-    if (token->type == _SAP_NUMBER || token->type)
+    if (token->type == _SAP_NUMBER || token->type != _SAP_VARIABLE)
         return token;
 
     sap_num res = lut_find(symbols, token->name);
     if (res == NULL)
-        sap_eval_token(token, _zero_);
+        sap_token_trans2num(token, _zero_);
     else
     {
-        sap_eval_token(token, res);
+        sap_token_trans2num(token, res);
         sap_free_num(&res);
     }
     return token;
@@ -125,18 +128,23 @@ static sap_token _sap_evaluate_operand(sap_token token)
 /* Evaluate an expression in tokens. Resource will be freed thereafter. (Intermediate resources are freed)
    Return NULL if an array of empty statement is passed as the argument.
    Partial reference: https://www.engr.mun.ca/~theo/Misc/exp_parsing.htm */
-static sap_num _sap_evaluate(sap_token *tokens)
+static sap_num _sap_evaluate(sap_token **tokens)
 {
     /* Skip some simple situations. */
-    if ((*tokens)->type == _SAP_END_OF_STMT) /* If the end of statement is the only element, return. */
+    if ((**tokens)->type == _SAP_END_OF_STMT) /* If the end of statement is the only element, return. */
         return NULL;
-    if ((*tokens)->type == _SAP_VARIABLE && (*(tokens + 1))->type == _SAP_ASSIGN) /* If it is assignment */
-    {
-        sap_token var = (*tokens);
-        sap_num res = _sap_evaluate(tokens + 2);
-        lut_insert(symbols, var->name, res);
-        return res;
-    }
+    // if ((*tokens)->type == _SAP_VARIABLE && (*(tokens + 1))->type == _SAP_ASSIGN) /* If it is assignment */
+    // {
+    //     sap_token var = (*tokens);
+    //     sap_num res = _sap_evaluate(tokens + 2);
+    //     if (res == NULL)
+    //     {
+    //         sap_warn("Invalid assignment.", 0);
+    //         res = sap_copy_num(_zero_);
+    //     }
+    //     lut_insert(symbols, var->name, res);
+    //     return res;
+    // }
 
     sap_token *ptr0;     /* Store the postfix equivalent of tokens. */
     sap_token *ptr;      /* Current position in the postfix tokens. */
@@ -146,15 +154,23 @@ static sap_num _sap_evaluate(sap_token *tokens)
     stack stk;           /* Store operands and operators */
 
     /* Initialization */
-    ptr = ptr0 = _sap_to_postfix(tokens);
+    ptr = ptr0 = _sap_to_postfix(*tokens);
     stk = sap_new_stack();
     sap_stack_push(stk, sap_get_sentinel());
+
+    // debug
+    // _sap_debug_print_token_arr(ptr0);
 
     while ((*ptr)->type != _SAP_END_OF_STMT)
     {
         if (sap_is_func(*ptr))
         {
-            tmp0 = _sap_evaluate((*ptr)->arg_tokens);
+            tmp0 = _sap_evaluate(&((*ptr)->arg_tokens));
+            if (tmp0 == NULL)
+            {
+                sap_warn("Invalid arguments.", 0);
+                tmp0 = sap_copy_num(_zero_);
+            }
             switch ((*ptr)->type)
             {
             case _SAP_SQRT:
@@ -182,16 +198,21 @@ static sap_num _sap_evaluate(sap_token *tokens)
             }
 
             /* Clean up*/
-            sap_eval_token(*ptr, tmp1);
+            sap_token_trans2num(*ptr, tmp1);
             sap_free_num(&tmp0);
             sap_free_num(&tmp1);
             sap_free_num(&tmp2);
+            tmp0 = NULL;
+            tmp1 = NULL;
+            tmp2 = NULL;
 
             /* Push the calculated result. */
             sap_stack_push(stk, *ptr);
         }
         else if ((*ptr)->type == _SAP_VARIABLE || (*ptr)->type == _SAP_NUMBER)
+        {
             sap_stack_push(stk, *ptr);
+        }
         else /* An operator */
         {
             /* In the evaluation process, only one of the node is evaluated and updated. */
@@ -213,63 +234,89 @@ static sap_num _sap_evaluate(sap_token *tokens)
             }
             else
             {
-                tmp2 = sap_copy_num(_sap_evaluate_operand(sap_stack_pop(stk))->val);
-                tmp1 = sap_copy_num(_sap_evaluate_operand(sap_stack_pop(stk))->val);
-                switch ((*ptr)->type)
+                sap_token tok2 = sap_stack_pop(stk);
+                sap_token tok1 = sap_stack_pop(stk);
+                if (tok1 != NULL && tok1->type != _SAP_STACK_SENTINEL && tok2 != NULL && tok2->type != _SAP_STACK_SENTINEL)
                 {
-                case _SAP_LESS:
-                    tmp0 = sap_compare(tmp1, tmp2) == -1 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
-                case _SAP_GREATER:
-                    tmp0 = sap_compare(tmp1, tmp2) == 1 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
-                case _SAP_EQ:
-                    tmp0 = sap_compare(tmp1, tmp2) == 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
-                case _SAP_LEQ:
-                    tmp0 = sap_compare(tmp1, tmp2) <= 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
-                case _SAP_GEQ:
-                    tmp0 = sap_compare(tmp1, tmp2) >= 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
-                case _SAP_NEQ:
-                    tmp0 = sap_compare(tmp1, tmp2) != 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
-                    break;
+                    tmp2 = sap_copy_num(_sap_evaluate_operand(tok2)->val);
+                    tmp1 = sap_copy_num(_sap_evaluate_operand(tok1)->val);
+                    switch ((*ptr)->type)
+                    {
+                    case _SAP_LESS:
+                        tmp0 = sap_compare(tmp1, tmp2) == -1 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
+                    case _SAP_GREATER:
+                        tmp0 = sap_compare(tmp1, tmp2) == 1 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
+                    case _SAP_EQ:
+                        tmp0 = sap_compare(tmp1, tmp2) == 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
+                    case _SAP_LEQ:
+                        tmp0 = sap_compare(tmp1, tmp2) <= 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
+                    case _SAP_GEQ:
+                        tmp0 = sap_compare(tmp1, tmp2) >= 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
+                    case _SAP_NEQ:
+                        tmp0 = sap_compare(tmp1, tmp2) != 0 ? sap_copy_num(_one_) : sap_copy_num(_zero_);
+                        break;
 
-                case _SAP_ADD:
-                    tmp0 = sap_add(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                case _SAP_MINUS:
-                    tmp0 = sap_sub(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                case _SAP_MULTIPLY:
-                    tmp0 = sap_mul(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                case _SAP_DIVIDE:
-                    tmp0 = sap_div(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                case _SAP_MODULO:
-                    tmp0 = sap_mod(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                case _SAP_POWER:
-                    tmp0 = sap_raise(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
-                    break;
-                default:
-                    sap_warn("Unsupported operation", 0);
+                    case _SAP_ADD:
+                        tmp0 = sap_add(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    case _SAP_MINUS:
+                        tmp0 = sap_sub(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    case _SAP_MULTIPLY:
+                        tmp0 = sap_mul(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    case _SAP_DIVIDE:
+                        tmp0 = sap_div(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    case _SAP_MODULO:
+                        tmp0 = sap_mod(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    case _SAP_POWER:
+                        tmp0 = sap_raise(tmp1, tmp2, MAX(tmp1->n_scale, tmp2->n_scale));
+                        break;
+                    default:
+                        sap_warn("Unsupported operation", 0);
+                        tmp0 = sap_copy_num(_zero_);
+                        break;
+                    }
+                }
+                else /* Invalid expression */
+                {
+                    sap_warn("Invalid expression.", 0);
                     tmp0 = sap_copy_num(_zero_);
                 }
             }
 
-            sap_eval_token(*ptr, tmp0);
+            sap_token_trans2num(*ptr, tmp0);
             sap_free_num(&tmp0);
             sap_free_num(&tmp1);
             sap_free_num(&tmp2);
+            tmp0 = NULL;
+            tmp1 = NULL;
+            tmp2 = NULL;
+
             /* Push the calculated result. */
             sap_stack_push(stk, *ptr);
         }
+        ptr++;
     }
 
-    sap_num result = sap_copy_num(sap_stack_pop(stk)->val);
+    sap_num result; /* Store the result */
+    sap_token final = sap_stack_pop(stk);
+    if (final->type == _SAP_VARIABLE)
+        _sap_evaluate_operand(final);
+    if (final->type == _SAP_NUMBER)
+        result = sap_copy_num(final->val);
+    else
+    {
+        sap_warn("Invalid expression.", 0);
+        result = sap_copy_num(_zero_);
+    }
 
     /* Clean up*/
 cleanup:
@@ -277,7 +324,7 @@ cleanup:
     sap_free_num(&tmp0);
     sap_free_num(&tmp1);
     sap_free_stack(&stk);
-    sap_free_tokens(&tokens);
+    sap_free_tokens(tokens);
 
     return result;
 }
@@ -286,8 +333,7 @@ cleanup:
 sap_num sap_execute(char *stmt)
 {
     sap_token *tokens = sap_parse_expr(stmt);
-    sap_num result = _sap_evaluate(tokens);
-    sap_free_tokens(&tokens);
+    sap_num result = _sap_evaluate(&tokens);
     return result;
 }
 

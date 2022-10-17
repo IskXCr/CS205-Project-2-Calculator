@@ -25,11 +25,12 @@ static char *_sap_op_to_str(char s)
 /* Test if a token is operand */
 int sap_is_operand(sap_token token)
 {
+    if (sap_is_func(token))
+        return TRUE;
     switch (token->type)
     {
     case _SAP_VARIABLE:
     case _SAP_NUMBER:
-    case _SAP_FUNC_CALL:
         return TRUE;
 
     default:
@@ -206,7 +207,7 @@ static void _sap_free_token(sap_token *token)
 {
     if (*token == NULL)
         return;
-    
+
     free((*token)->name);
     sap_free_num(&((*token)->val));
     if ((*token)->arg_tokens != NULL)
@@ -220,7 +221,7 @@ static void _sap_free_token_array(sap_token **token_array)
 {
     if (*token_array == NULL)
         return;
-    
+
     sap_token *start = *token_array;
     while ((*start)->type != _SAP_END_OF_STMT)
         _sap_free_token(start++);
@@ -474,7 +475,7 @@ static sap_token *sap_parse_expr_impl(char *src)
         next = _sap_parse_next_token(&src);
 
         /* If the operator is a '-', and (if there is no previous token, or the previous token is an operator) */
-        if (next->type == _SAP_MINUS && (ptr <= arr || sap_is_operator(*ptr)))
+        if (next->type == _SAP_MINUS && (ptr <= arr || sap_is_operator(*(ptr - 1))))
         {
             negate = TRUE;
             _sap_free_token(&next);
@@ -503,18 +504,15 @@ sap_token *sap_parse_expr(char *src)
     return sap_parse_expr_impl(src);
 }
 
-/* Evaluate this token object to a number if possible. All related resource will be freed. */
-void sap_eval_token(sap_token token, sap_num val)
+/* Modify this token object to a number if possible. All related resource will be freed. */
+void sap_token_trans2num(sap_token token, sap_num val)
 {
-    if (!sap_is_operand(token))
-        return;
-
     sap_free_num(&(token->val));
     free(token->name);
     token->name = NULL;
     sap_free_tokens(&(token->arg_tokens));
     token->negate = FALSE;
-    
+
     token->type = _SAP_NUMBER;
     token->val = sap_copy_num(val);
 }
@@ -572,4 +570,15 @@ char *_sap_debug_token2text(sap_token token)
             buf_arg == NULL ? "NULL" : buf_arg);
     free(buf_arg);
     return buf;
+}
+
+/* Print a valid token array that ends with _SAP_END_OF_STMT */
+void _sap_debug_print_token_arr(sap_token *token)
+{
+    sap_token *ptr64 = token;
+    while ((*ptr64)->type != _SAP_END_OF_STMT)
+    {
+        printf("[Parser Debugger] Listing token: %s\n", _sap_debug_token2text(*ptr64));
+        ptr64++;
+    }
 }
