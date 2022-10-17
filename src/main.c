@@ -51,7 +51,7 @@ static void
 show_instruction()
 {
     printf("Enter \"quit\" to exit.\n%s",
-           "In interactive mode: [quit|history|expression(assignment included)]\n");
+           "In interactive mode: [help|quit|history|expression(assignment included)]\n");
 }
 
 static void
@@ -194,6 +194,8 @@ int main(int argc, char **argv)
     {
         if (strstr(buf, "quit") != 0 && buf[0] == 'q')
             exit(0);
+        else if (strstr(buf, "help") != 0 && buf[0] == 'h')
+            show_instruction();
         /* Some OS don't support history. */
         else if (strstr(buf, "history") != 0 && buf[0] == 'h')
         {

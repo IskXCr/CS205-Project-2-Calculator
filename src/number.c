@@ -785,7 +785,7 @@ static sap_num _sap_mul_impl(sap_num op1, sap_num op2, int scale)
     result0 = _sap_rec_mul(tmp1, tmp2);
     result = _sap_shift(result0, -(op1->n_scale + op2->n_scale));
     _sap_truncate(result, scale, FALSE);                                            /* Truncate the number (only the fractional part) to meet scale requirements. */
-    result->n_sign = (op1->n_sign == POS) ? op2->n_sign : _sap_negate(op1->n_sign); /* Negate the sign when op1 is negative. */
+    result->n_sign = (op1->n_sign == POS) ? op2->n_sign : _sap_negate(op2->n_sign); /* Negate the sign when op1 is negative. */
 
     sap_free_num(&tmp1);
     sap_free_num(&tmp2);
