@@ -241,15 +241,27 @@ Header file for ``parser.h``
 
 ```C
 /* Header file for declarations of parser functions */
+
 #ifndef _PARSER_H
 #define _PARSER_H
 
 
 /* Include libraries */
+
 #include "number.h"
 
 
 /* Definitions */
+
+#ifdef TRUE
+#undef TRUE
+#endif
+#define TRUE 1
+
+#ifdef FALSE
+#undef FALSE
+#endif
+#define FALSE 0
 
 /* Function token definitions */
 
@@ -274,12 +286,14 @@ typedef enum sap_token_type
     _SAP_EQ,      /* Equal */
     _SAP_LEQ,     /* less or equal */
     _SAP_GEQ,     /* greater or equal */
+    _SAP_NEQ,     /* Not equal */
     _SAP_ASSIGN,  /* Assignment */
 
     _SAP_ADD,      /* Add */
     _SAP_MINUS,    /* Minus */
     _SAP_MULTIPLY, /* Multiply */
     _SAP_DIVIDE,   /* Divide */
+    _SAP_MODULO,  /* Modulus */
     _SAP_POWER,    /* Power */
 
     _SAP_SQRT,   /* Sqrt */
@@ -292,7 +306,7 @@ typedef enum sap_token_type
     _SAP_PAREN_L, /* Left parentheses */
     _SAP_PAREN_R, /* Right parentheses */
 
-    _SAP_VAR_NAME, /* Variable name */
+    _SAP_VARIABLE, /* Variable name */
     _SAP_NUMBER,   /* Number */
     
     _SAP_FUNC_CALL /* Function calls */
@@ -307,23 +321,37 @@ typedef struct sap_token_struct *sap_token;
 typedef struct sap_token_struct
 {
     sap_token_type type; /* Type of this token. */
-    char *name;          /* If it is a variable or function call, stores its name. Else it is NULL. Must be copied when using. */
+    char *name;          /* If it is a variable or function call, stores its name in a copy. Else it is NULL. Must be copied when using. */
     sap_num val;         /* If it is a number, stores the value, and hen use this value ensure that it is copied. Else it is NULL. */
 
     /* If it is a function, stores the array of tokens of arguments. 
        Else, it is NULL. Array must end with _SAP_END_OF_STMT.
        The struct has complete control over the array, and _sap_free_token will free the array when necessary. */
     struct sap_token_struct **arg_tokens; 
+
+    int negate; /* TRUE if the evaluation result of this token is to be negated. */
 } sap_token_struct;
 
 
 /* Function prototypes */
 
-int sap_get_prec(sap_token_type type);
+sap_token sap_get_sentinel(void);
+
+int sap_is_operand(sap_token token);
+
+int sap_is_operator(sap_token token);
+
+int sap_is_func(sap_token token);
+
+int sap_get_in_prec(sap_token token);
+
+int sap_get_out_prec(sap_token token);
 
 int sap_get_token_arr_length(sap_token *array);
 
 sap_token *sap_parse_expr(char *src);
+
+void sap_token_trans2num(sap_token token, sap_num val);
 
 void sap_free_tokens(sap_token **array);
 
@@ -331,6 +359,8 @@ void sap_free_tokens(sap_token **array);
 /* Debug function prototypes. They are forbidden to use in production environments. */
 
 char *_sap_debug_token2text(sap_token token);
+
+void _sap_debug_print_token_arr(sap_token *token);
 
 #endif
 ```
@@ -417,6 +447,11 @@ void lut_reset_all(lut_table table);
 int quiet = FALSE;
 int debug = FALSE;
 
+#define _HISTORY_MAX_SIZE 10
+
+static char *history_buf[_HISTORY_MAX_SIZE] = {}; /* History buffer. All initialized to NULL. */
+static int history_count = 0;                     /* Next free position in history buffer. */
+
 #define OPT_CNT 4
 static option options[OPT_CNT] = {
     {'h', "help"},
@@ -427,10 +462,11 @@ static option options[OPT_CNT] = {
 static void
 usage(const char *progname)
 {
-    printf("usage: %s [options] [file ...]\n%s%s%s", progname,
+    printf("usage: %s [options] [file ...]\n%s%s%s%s", progname,
            "  -h  --help     print this usage and exit\n",
            "  -q  --quiet    don't print initial banner\n",
-           "  -v  --version  print version information and exit\n");
+           "  -v  --version  print version information and exit\n",
+           "  -d  --debug    enable debug features\n");
 }
 
 static void
@@ -443,7 +479,8 @@ show_version()
 static void
 show_instruction()
 {
-    printf("Enter \"quit\" to exit.\n");
+    printf("Enter \"quit\" to exit.\n%s",
+           "In interactive mode: [help|quit|history|expression(assignment included)]\n");
 }
 
 static void
@@ -470,6 +507,7 @@ _process_arg_abbr(char arg, char *progname)
     case 'd':
         show_debug();
         debug = TRUE;
+        break;
     default:
         usage(progname);
         exit(1);
@@ -529,6 +567,29 @@ parse_args(int argc, char **argv)
     }
 }
 
+/* Append a string to history, most often a command. */
+static void
+append_to_history(char *src)
+{
+    free(history_buf[history_count]);
+    history_buf[history_count] = src;
+    history_count = (history_count + 1) % _HISTORY_MAX_SIZE;
+}
+
+/* Show all the commands in the history stack, in chronological order. */
+static void
+show_history(void)
+{
+    printf("[History] (Not fully implemented) Showing history of number %d\n", _HISTORY_MAX_SIZE);
+    for (int i = history_count; i < _HISTORY_MAX_SIZE; ++i)
+        if (history_buf[i] != NULL)
+            printf("%s", history_buf[i]);
+    for (int i = 0; i < history_count; ++i)
+        if (history_buf[i] != NULL)
+            printf("%s", history_buf[i]);
+    printf("[History] Completed.\n");
+}
+
 int main(int argc, char **argv)
 {
     /* Parse arguments first. */
@@ -537,6 +598,11 @@ int main(int argc, char **argv)
     {
         show_version();
         show_instruction();
+    }
+    if (debug)
+    {
+        test();
+        exit(0);
     }
 
     /* Init libraries */
@@ -547,24 +613,41 @@ int main(int argc, char **argv)
     char *buf = NULL;
     size_t size = 0;
 
+    /* Reference: https://stackoverflow.com/questions/11350878/how-can-i-determine-if-the-operating-system-is-posix-in-c */
+
+#if !defined (__unix__) && !(defined (__APPLE__) && defined (__MACH__)) 
+    while (getline0(&buf, &size, stdin) > 0)
+#else
     while (getline(&buf, &size, stdin) > 0)
+#endif
     {
-        if (strcmp(buf, "quit") == 0)
+        if (strstr(buf, "quit") != 0 && buf[0] == 'q')
             exit(0);
-
-        char **stmts = fetch_expr(buf); /* Will later be freed. */
-        char **ptr = stmts;             /* Pointer to current statement */
-
-        for (; *ptr != NULL; ptr++)
+        else if (strstr(buf, "help") != 0 && buf[0] == 'h')
+            show_instruction();
+        /* Some OS don't support history. */
+        else if (strstr(buf, "history") != 0 && buf[0] == 'h')
         {
-            result = sap_execute(*ptr);
-            printf("%s\n", sap_num2str(result));
-            sap_free_num(&result);
+            show_history();
+        }
+        else
+        {
+            char **stmts = fetch_expr(buf); /* Will later be freed. */
+            char **ptr = stmts;             /* Pointer to current statement */
+
+            for (; *ptr != NULL; ptr++)
+            {
+                result = sap_execute(*ptr);
+                printf("%s\n", sap_num2str(result));
+                sap_free_num(&result);
+            }
+
+            /* Clean up */
+            free_expr_array(&stmts);
         }
 
         /* Clean up */
-        free_expr_array(&stmts);
-        free(buf);
+        append_to_history(buf);
         buf = NULL;
     }
 }
@@ -717,7 +800,7 @@ static sap_num _sap_mul_impl(sap_num op1, sap_num op2, int scale)
     result0 = _sap_rec_mul(tmp1, tmp2);
     result = _sap_shift(result0, -(op1->n_scale + op2->n_scale));
     _sap_truncate(result, scale, FALSE);                                            /* Truncate the number (only the fractional part) to meet scale requirements. */
-    result->n_sign = (op1->n_sign == POS) ? op2->n_sign : _sap_negate(op1->n_sign); /* Negate the sign when op1 is negative. */
+    result->n_sign = (op1->n_sign == POS) ? op2->n_sign : _sap_negate(op2->n_sign); /* Negate the sign when op1 is negative. */
 
     sap_free_num(&tmp1);
     sap_free_num(&tmp2);
@@ -744,6 +827,7 @@ static sap_token *sap_parse_expr_impl(char *src)
     sap_token *arr = (sap_token *)malloc(len * sizeof(sap_token));
     sap_token *newarr;    /* In case we need to realloc more memory. */
     sap_token *ptr = arr; /* Next available position. */
+    int negate = FALSE;   /* If TRUE in a loop, negate this operand. */
 
     if (arr == NULL)
         out_of_memory();
@@ -764,10 +848,37 @@ static sap_token *sap_parse_expr_impl(char *src)
 
         /* Fetch next token */
         next = _sap_parse_next_token(&src);
+
+        /* If the operator is a '-', and (if there is no previous token, or the previous token is an operator) */
+        if (next->type == _SAP_MINUS && (ptr <= arr || sap_is_operator(*(ptr - 1))))
+        {
+            negate = TRUE;
+            _sap_free_token(&next);
+            if (ptr > arr)
+                next = *(ptr - 1);
+            continue;
+        }
+
+        if (negate)
+        {
+            if (sap_is_operand(next))
+                next->negate = TRUE;
+            else
+                sap_warn("Invalid unary minus. Token after: ", 1, _sap_debug_token2text(next), TRUE);
+            negate = FALSE;
+        }
+
         *ptr++ = next;
-    } while (next->type != _SAP_END_OF_STMT);
+    } while (next == NULL || next->type != _SAP_END_OF_STMT); /* in case that leading tokens are being ignored. */
 
     return arr;
+}
+
+/* Parse an expression from src. This function guarantees that the returned array is ended with _SAP_END_OF_STMT.
+   However, the array needs to be freed by the caller. src will only be read and no modifications will be made. */
+sap_token *sap_parse_expr(char *src)
+{
+    return sap_parse_expr_impl(src);
 }
 ```
 
@@ -811,8 +922,6 @@ Input: x = 3; y = (x + 3 + sqrt(0.75)/2^2 - 0.64)
 Output: 3
 5.57
 ```
-
-![image-20221016233051283](C:\Users\IskXCr\AppData\Roaming\Typora\typora-user-images\image-20221016233051283.png)
 
 ##### Test Case #6
 
