@@ -896,3 +896,8 @@ Simple iterative division, Newton's Iteration, Lookup Table. Recursive divide-an
 *Supports limited precision*
 
 LUT (Lookup Table)/Math.h
+
+### Function Table, Symbol Table and Custom Function Call
+Custom function call can be implemented through adding lines to branching part of the parser. The parser already takes ``sin``, ``cos``, etc. as functions and evaluates their argument first. It is easy to evaluate multiple arguments by adding branches handling commas (which is used for separating arguments).
+
+Symbol Table is implemented for variables, and assignment can be made multiple times in expressions (associativity from ***right to left***). However, it is undefined behaviour to assign a variable on both sides of a binary operator or in multiple arguments to a function call, since the order of evaluation is undefined.
