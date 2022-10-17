@@ -108,21 +108,33 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
     return result;
 }
 
-/* A simple routine for evaluating a variable or a number node to an actual value.
+/* A simple routine for evaluating a variable or a number node to an actual value, performing the possible negate.
    This routine is used as an evaluation of the operand.
    The returned pointer is the token itself. */
 static sap_token _sap_evaluate_operand(sap_token token)
 {
-    if (token->type == _SAP_NUMBER || token->type != _SAP_VARIABLE)
+    if (token->type != _SAP_NUMBER && token->type != _SAP_VARIABLE)
         return token;
 
-    sap_num res = lut_find(symbols, token->name);
-    if (res == NULL)
-        sap_token_trans2num(token, _zero_);
-    else
+    if (token->type == _SAP_VARIABLE)
     {
-        sap_token_trans2num(token, res);
-        sap_free_num(&res);
+        sap_num res = lut_find(symbols, token->name);
+        if (res == NULL)
+            sap_token_trans2num(token, _zero_);
+        else
+        {
+            sap_token_trans2num(token, res);
+            sap_free_num(&res);
+        }
+    }
+
+    if (token->negate) /* If the result should be negated */
+    {
+        sap_num tmp = sap_replicate_num(token->val);
+        sap_free_num(&(token->val));
+        token->val = tmp;
+        sap_negate(token->val);
+        token->negate = FALSE;
     }
     return token;
 }
@@ -176,7 +188,7 @@ static sap_num _sap_evaluate(sap_token **tokens)
             switch ((*ptr)->type)
             {
             case _SAP_SQRT:
-                tmp1 = sap_sqrt(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+                tmp1 = sap_sqrt(tmp0, tmp0->n_scale);
                 break;
             case _SAP_SIN:
                 tmp1 = sap_sin(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
@@ -310,10 +322,8 @@ static sap_num _sap_evaluate(sap_token **tokens)
 
     sap_num result; /* Store the result */
     sap_token final = sap_stack_pop(stk);
-    if (final->type == _SAP_VARIABLE)
-        _sap_evaluate_operand(final);
-    if (final->type == _SAP_NUMBER)
-        result = sap_copy_num(final->val);
+    if (final->type == _SAP_VARIABLE || final->type == _SAP_NUMBER)
+        result = sap_copy_num(_sap_evaluate_operand(final)->val);
     else
     {
         sap_warn("Invalid expression.", 0);

@@ -50,7 +50,8 @@ show_version()
 static void
 show_instruction()
 {
-    printf("Enter \"quit\" to exit.\n");
+    printf("Enter \"quit\" to exit.\n%s",
+           "In interactive mode: [quit|history|expression(assignment included)]\n");
 }
 
 static void
@@ -151,7 +152,7 @@ static void
 show_history(void)
 {
     printf("[History] (Not fully implemented) Showing history of number %d\n", _HISTORY_MAX_SIZE);
-    for (int i = history_count; i<_HISTORY_MAX_SIZE; ++i)
+    for (int i = history_count; i < _HISTORY_MAX_SIZE; ++i)
         if (history_buf[i] != NULL)
             printf("%s", history_buf[i]);
     for (int i = 0; i < history_count; ++i)
@@ -196,13 +197,6 @@ int main(int argc, char **argv)
         {
             char **stmts = fetch_expr(buf); /* Will later be freed. */
             char **ptr = stmts;             /* Pointer to current statement */
-
-            // Debug: Print all fetched statements
-            // for (; *ptr != NULL; ptr++)
-            // {
-            //     printf("Fetched: %s\n", *ptr);
-            // }
-            // ptr = stmts;
 
             for (; *ptr != NULL; ptr++)
             {

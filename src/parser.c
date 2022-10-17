@@ -479,6 +479,8 @@ static sap_token *sap_parse_expr_impl(char *src)
         {
             negate = TRUE;
             _sap_free_token(&next);
+            if (ptr > arr)
+                next = *(ptr - 1);
             continue;
         }
 
@@ -492,7 +494,7 @@ static sap_token *sap_parse_expr_impl(char *src)
         }
 
         *ptr++ = next;
-    } while (next->type != _SAP_END_OF_STMT);
+    } while (next == NULL || next->type != _SAP_END_OF_STMT); /* in case that leading tokens are being ignored. */
 
     return arr;
 }
@@ -511,10 +513,17 @@ void sap_token_trans2num(sap_token token, sap_num val)
     free(token->name);
     token->name = NULL;
     sap_free_tokens(&(token->arg_tokens));
-    token->negate = FALSE;
 
     token->type = _SAP_NUMBER;
     token->val = sap_copy_num(val);
+    if (token->negate) /* If the result should be negated */
+    {
+        sap_num tmp = sap_replicate_num(token->val);
+        sap_free_num(&(token->val));
+        token->val = tmp;
+        sap_negate(token->val);
+        token->negate = FALSE;
+    }
 }
 
 /* Free a valid array of tokens that ends with _SAP_END_OF_STMT. */

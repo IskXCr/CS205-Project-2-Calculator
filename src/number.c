@@ -96,7 +96,7 @@ static void _sap_truncate(sap_num op, int scale, int round)
 }
 
 /* Get a replicate of the number, mainly for thread safety. */
-static sap_num _sap_replicate_num(sap_num op)
+sap_num sap_replicate_num(sap_num op)
 {
     sap_num tmp = sap_new_num(op->n_len, op->n_scale);
     tmp->n_sign = op->n_sign;
@@ -840,7 +840,7 @@ static sap_num _sap_simple_high_prec_div(sap_num dividend, sap_num divisor, int 
     result = sap_new_num(len, scale);
 
     /* Simulate division. */
-    sap_num tmp = _sap_replicate_num(dividend);
+    sap_num tmp = sap_replicate_num(dividend);
     sap_num tmp2;
 
     while (_sap_compare_impl(tmp, divisor, FALSE) >= 0)
@@ -909,7 +909,7 @@ static void _sap_simple_divmod(sap_num dividend, sap_num divisor, sap_num *quoti
         *quotient = sap_new_num(len, 0);
 
     /* Simulate division. */
-    sap_num tmp = _sap_replicate_num(dividend);
+    sap_num tmp = sap_replicate_num(dividend);
     sap_num tmp2;
     while (_sap_compare_impl(tmp, divisor, FALSE) >= 0)
     {
@@ -1117,8 +1117,8 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
     int cscale = rscale * sap_num2int(expo); /* It is easy to accumulate errors when a wrong scale is selected.
                                                 Try to maximize the scale here. */
     int do_reverse = FALSE;
-    result = _sap_replicate_num(base);
-    expo0 = _sap_replicate_num(expo);
+    result = sap_replicate_num(base);
+    expo0 = sap_replicate_num(expo);
 
     if (sap_compare(expo, _zero_) < 0)
     {

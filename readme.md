@@ -15,11 +15,11 @@ The whole project is written in ``C``.
 
 The following features are implemented to illustrate the need:
 
-0. Command options available for use: ``quiet``, ``debug``, ``version``, ``help``. ``debug`` mode automatically test the program and output the result.
+1. Command options available for use: ``quiet``, ``debug``, ``version``, ``help``. ``debug`` mode automatically test the program and output the result. The command-line arguments can be fetched like most Unix programs, e.g. ``--help`` for help, and ``-qd`` to indicate enabling quiet and debug at the same time.
 
-1. Robustness. Recover from wrong input. Restore internal states and release resources upon wrong input.
+2. Robustness. Recover from wrong input. Restore internal states and release resources upon wrong input.
 
-2. Interactive direct calculation from expressions involving 
+3. Interactive direct calculation from expressions involving 
 
    a. *numbers in* ***arbitrary precision***
 
@@ -29,17 +29,17 @@ The following features are implemented to illustrate the need:
 
    d. ***comparison operators*** (evaluates to 1 if ***true***, 0 if ***false***
 
-3. History. Press Up/Down to select a history to enter. (***Currently only supports using command "history" to show recent history***, because OS interfaces differ.)
+4. History. Press Up/Down to select a history to enter. (***Currently only supports using command "history" to show recent history***, because OS interfaces differ.)
 
-4. Efficient algorithms to speed up the calculation.
+5. Efficient algorithms to speed up the calculation.
    
-5. Evaluate expression in precedence. Support parentheses, function calls, unary minus, binary operators, variable assignment in expressions (the same as in C language).
+6. Evaluate expression in precedence. Support parentheses, function calls, unary minus, binary operators, variable assignment in expressions (the same as in C language).
 
-6. Support Abstract Syntax Tree (AST) Parsing.
+7. Support Abstract Syntax Tree (AST) Parsing.
    
-7. Support numbers with precision up to the upper bound of ``int`` type. (2^31 - 1). Dynamically allocated memory for use, and the upper bound is easy to modify (by modifying iterators in ``number.h``). All other data structures used can dynamically allocate memory.
+8. Support numbers with precision up to the upper bound of ``int`` type. (2^31 - 1). Dynamically allocated memory for use, and the upper bound is easy to modify (by modifying iterators in ``number.h``). All other data structures used can dynamically allocate memory.
    
-8. Provided a ``number.h`` and a ``parser.h`` library that can be used to parse an expression into tokens. Provided ``sap.h`` to evaluate an expression recursively.
+9. Provided a ``number.h`` and a ``parser.h`` library that can be used to parse an expression into tokens. Provided ``sap.h`` to evaluate an expression recursively.
 
 The following algorithms and libraries are **implemented** to speed up and ensure the correctness and efficiency of the program.
 

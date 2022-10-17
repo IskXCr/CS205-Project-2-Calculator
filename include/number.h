@@ -70,6 +70,8 @@ sap_num sap_new_num(int length, int scale);
 
 void sap_free_num(sap_num *op);
 
+sap_num sap_replicate_num(sap_num op);
+
 sap_num sap_copy_num(sap_num src);
 
 void sap_init_num(sap_num *op);
