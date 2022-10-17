@@ -16,12 +16,15 @@ Input: x = 3; y = 5; x > y; x <= y; sqrt(x = (y == 3)); sin(x) + y + cos(y);...
 ### Arithmetic Implementations
 #### Multiplication
 *Supports arbitrary precision*
+
 Karatsuba's Method
 #### Division, Modulus and Sqrt(), raise, ln 
 *Supports arbitrary precision*
+
 Simple iterative division, Newton's Iteration, Lookup Table. Recursive divide-and-conquer algorithms.
 #### Sin, Cos, Exp
 *Supports limited precision*
+
 LUT (Lookup Table)/Math.h
 
 ### Variables
