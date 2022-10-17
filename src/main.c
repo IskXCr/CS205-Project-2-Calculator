@@ -184,7 +184,13 @@ int main(int argc, char **argv)
     char *buf = NULL;
     size_t size = 0;
 
+    /* Reference: https://stackoverflow.com/questions/11350878/how-can-i-determine-if-the-operating-system-is-posix-in-c */
+
+#if !defined (__unix__) && !(defined (__APPLE__) && defined (__MACH__)) 
+    while (getline0(&buf, &size, stdin) > 0)
+#else
     while (getline(&buf, &size, stdin) > 0)
+#endif
     {
         if (strstr(buf, "quit") != 0 && buf[0] == 'q')
             exit(0);

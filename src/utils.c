@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stddef.h>
 #include <stdarg.h>
 
 static void (*_handler_exc)(void); /* Exception handler. */
@@ -42,6 +43,50 @@ void sap_warn(char *msg, int cnt, ...)
     if (_handler_exc != NULL)
         (*_handler_exc)();
 }
+
+#if !defined (__unix__) && !(defined (__APPLE__) && defined (__MACH__)) 
+#define _UTILS_BUF_DEFAULT_SIZE 100
+
+/* Like getline() in a standard POSIX library. However, it does not set error flags, and simply exits if there is no enough space. */
+ssize_t getline0(char **lineptr, size_t *size, FILE *file)
+{
+    size_t len;   /* Length of the current buf. Dynamically allocated. */
+    char *buf; /* Buf used to store the result. */
+    char *ptr; /* Next free position in the buffer */
+    int c;     /* Store the character */
+
+    /* Initialization */
+    len = _UTILS_BUF_DEFAULT_SIZE;
+    ptr = buf = (char *)malloc(len);
+    if (buf == NULL)
+        out_of_memory();
+
+    /* Assignments */
+    *lineptr = buf;
+    *size = len;
+
+    while ((c = fgetc(file)) != '\0' && c != EOF && c != '\n' )
+    {
+        if (ptr - buf == len)
+        {
+            char *newbuf = (char *)realloc(buf, len + _UTILS_BUF_DEFAULT_SIZE);
+            if (newbuf == NULL)
+                out_of_memory();
+            *lineptr = newbuf;
+            buf = newbuf;
+            ptr = buf + len;
+            len += _UTILS_BUF_DEFAULT_SIZE;
+            *size = len;
+        }
+        *ptr++ = c;
+    }
+    if (c == '\n')
+        *ptr++ = c;
+    *ptr = '\0';
+    
+    return (ssize_t)(ptr - buf);
+}
+#endif
 
 /* Fetch the next token starting at *src until the first whitespace character or EOF. String must be freed afterwards. */
 char *fetch_token(char *src)

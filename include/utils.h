@@ -21,6 +21,10 @@ void out_of_memory(void);
 
 void sap_warn(char *msg, int cnt, ...);
 
+#if !defined (__unix__) && !(defined (__APPLE__) && defined (__MACH__)) 
+ssize_t getline0(char **lineptr, size_t *size, FILE *file);
+#endif
+
 char *fetch_token(char *src);
 
 char **fetch_expr(char *src);
