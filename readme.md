@@ -15,6 +15,8 @@ The whole project is written in ``C``.
 
 The following features are implemented to illustrate the need:
 
+0. Command options available for use: ``quiet``, ``debug``, ``version``, ``help``. ``debug`` mode automatically test the program and output the result.
+
 1. Robustness. Recover from wrong input. Restore internal states and release resources upon wrong input.
 
 2. Interactive direct calculation from expressions involving 

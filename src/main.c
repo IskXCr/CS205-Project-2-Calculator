@@ -33,10 +33,11 @@ static option options[OPT_CNT] = {
 static void
 usage(const char *progname)
 {
-    printf("usage: %s [options] [file ...]\n%s%s%s", progname,
+    printf("usage: %s [options] [file ...]\n%s%s%s%s", progname,
            "  -h  --help     print this usage and exit\n",
            "  -q  --quiet    don't print initial banner\n",
-           "  -v  --version  print version information and exit\n");
+           "  -v  --version  print version information and exit\n",
+           "  -d  --debug    enable debug features\n");
 }
 
 static void
@@ -76,6 +77,7 @@ _process_arg_abbr(char arg, char *progname)
     case 'd':
         show_debug();
         debug = TRUE;
+        break;
     default:
         usage(progname);
         exit(1);

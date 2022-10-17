@@ -26,8 +26,11 @@ static void test_sap(void);
 void test(void)
 {
     sap_init_number_lib();
-
+    test_number();
+    test_lut();
+    test_parser();
     test_util_fetch_expr();
+    test_sap();
 }
 
 static void
