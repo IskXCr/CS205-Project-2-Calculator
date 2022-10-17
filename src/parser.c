@@ -384,6 +384,14 @@ static sap_token _sap_parse_next_token(char **lineptr)
         memcpy(buf, ptr1, len);
         *(buf + len) = '\0';
 
+        /* Skip function call blanks */
+        while (isspace(*ptr))
+            ptr++;
+        /* Meet the first non-blank character. 
+           If ptr is actually moved in the previous while loop, decrease. */
+        if (*ptr != '(' && ptr > ptr2) 
+            ptr--;
+
         /* Judge whether it is a function or a variable. */
         if (*ptr == '(') /* Calling functions */
         {
