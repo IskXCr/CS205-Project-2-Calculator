@@ -324,11 +324,11 @@ static sap_token _sap_parse_next_token(char **lineptr)
                 else
                 {
                     --ptr;
-                    sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr));
+                    sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr), TRUE);
                 }
                 break;
             default:
-                sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr));
+                sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr), TRUE);
                 break;
             }
             ptr++;
@@ -411,7 +411,7 @@ static sap_token _sap_parse_next_token(char **lineptr)
             else
             {
                 type = _SAP_FUNC_CALL;
-                sap_warn("Unrecognized function: ", 1, buf);
+                sap_warn("Unrecognized function: ", 1, buf, FALSE);
             }
 
             char *ptr3 = ptr + 1;
@@ -497,7 +497,7 @@ static sap_token *sap_parse_expr_impl(char *src)
             if (sap_is_operand(next))
                 next->negate = TRUE;
             else
-                sap_warn("Invalid unary minus. Token after: ", 1, _sap_debug_token2text(next));
+                sap_warn("Invalid unary minus. Token after: ", 1, _sap_debug_token2text(next), TRUE);
             negate = FALSE;
         }
 

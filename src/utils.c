@@ -20,8 +20,10 @@ void out_of_memory()
     exit(1);
 }
 
-/* Output the warning message, following by a list of comments. Then let utils library handle the exception.
-   The char* arguments will be **consumed**, meaning automatically freed after use. */
+/* Output the warning message, following by first count of comments, and then 
+   a list of comments and int FLAG to indicate whether to free the corresponding pointer after use.
+   Then let utils library handle the exception.
+   The char* arguments will be **consumed** if the flag following the char* is TRUE, meaning automatically freed after use. */
 void sap_warn(char *msg, int cnt, ...)
 {
     fprintf(stderr, "SAP error: %s", msg);
@@ -33,7 +35,9 @@ void sap_warn(char *msg, int cnt, ...)
     {
         char *p = va_arg(argp, char *);
         fprintf(stderr, "%s", p);
-        free(p);
+        int do_free = va_arg(argp, int);
+        if (do_free)
+            free(p);
     }
     va_end(argp);
 

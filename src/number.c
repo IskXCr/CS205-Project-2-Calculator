@@ -593,7 +593,10 @@ static sap_num _sap_sub_impl(sap_num op1, sap_num op2, int scale_min, sign op_si
         else
         {
             sap_free_num(&tmp);
-            sap_warn("Internal error: subtraction_impl performed on invalid operands: ", 3, sap_num2str(op1), " and ", sap_num2str(op2));
+            sap_warn("Internal error: subtraction_impl performed on invalid operands: ", 3,
+                     sap_num2str(op1), TRUE,
+                     " and ", FALSE,
+                     sap_num2str(op2), TRUE);
         }
     _sap_normalize(tmp);
     return tmp;
@@ -821,7 +824,7 @@ static void _sap_self_increase(sap_num op1, int int_offset)
         }
     }
     if (carry == 1)
-        sap_warn("Self increase error: storage not enough: ", 1, sap_num2str(op1));
+        sap_warn("Self increase error: storage not enough: ", 1, sap_num2str(op1), TRUE);
 }
 
 /* Internal simple division for handling small numbers. High complexity. Signs are ignored. */
@@ -829,7 +832,10 @@ static sap_num _sap_simple_high_prec_div(sap_num dividend, sap_num divisor, int 
 {
     if (sap_is_zero(divisor))
     {
-        sap_warn("0 divisor detected: ", 3, sap_num2str(dividend), " / ", sap_num2str(divisor));
+        sap_warn("0 divisor detected: ", 3,
+                 sap_num2str(dividend), TRUE,
+                 " / ", FALSE,
+                 sap_num2str(divisor), TRUE);
         return sap_copy_num(_zero_);
     }
 
@@ -896,7 +902,10 @@ static void _sap_simple_divmod(sap_num dividend, sap_num divisor, sap_num *quoti
 {
     if (sap_is_zero(divisor))
     {
-        sap_warn("0 divisor detected: ", 3, sap_num2str(dividend), " / ", sap_num2str(divisor));
+        sap_warn("0 divisor detected: ", 3,
+                 sap_num2str(dividend), TRUE,
+                 " / ", FALSE,
+                 sap_num2str(divisor), TRUE);
         *quotient = sap_copy_num(_zero_);
         *remainder = sap_copy_num(_zero_);
         return;
@@ -934,7 +943,7 @@ static sap_num _sap_mod_impl(sap_num dividend, sap_num divisor, int scale)
     return remainder;
 }
 
-/* Divide dividend by divisor. 
+/* Divide dividend by divisor.
    Return a new number as the result.*/
 sap_num sap_mod(sap_num dividend, sap_num divisor, int scale)
 {
@@ -950,7 +959,7 @@ static void _sap_divmod_impl(sap_num dividend, sap_num divisor, sap_num *quotien
     _sap_truncate(*remainder, scale, FALSE);
 }
 
-/* Divide dividend by divisor, get both quotient and remainder. 
+/* Divide dividend by divisor, get both quotient and remainder.
    Return a new number as the result.*/
 void sap_divmod(sap_num dividend, sap_num divisor, sap_num *quotient, sap_num *remainder, int scale)
 {
@@ -963,7 +972,7 @@ static sap_num _sap_sqrt_impl(sap_num op, int scale)
     /* Skipping some simple situations. */
     if (sap_is_neg(op))
     {
-        sap_warn("Function SQRT performed on negative operand: ", 1, sap_num2str(op));
+        sap_warn("Function SQRT performed on negative operand: ", 1, sap_num2str(op), TRUE);
         return sap_copy_num(_zero_);
     }
     if (sap_is_zero(op))
@@ -1097,7 +1106,10 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
     /* Process simple situations first. */
     if (expo->n_scale > 0)
     {
-        sap_warn("Non integer exponent: ", 3, sap_num2str(base), " ^ ", sap_num2str(expo));
+        sap_warn("Non integer exponent: ", 3,
+                 sap_num2str(base), TRUE,
+                 " ^ ", FALSE,
+                 sap_num2str(expo), TRUE);
         return sap_copy_num(_zero_);
     }
     if (sap_compare(expo, _zero_) == 0)

@@ -206,6 +206,7 @@ static sap_num _sap_evaluate(sap_token **tokens)
                 tmp1 = sap_exp(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
                 break;
             case _SAP_FUNC_CALL:
+                /* Reserved for future function table invoke. */
             default:
                 sap_warn("Unsupported operation", 0);
                 tmp1 = sap_copy_num(tmp0);
