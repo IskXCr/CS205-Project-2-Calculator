@@ -7,6 +7,8 @@
 ## Part 0 - Project Link
 [IskXCr/CS205-Project-2-Calculator](https://github.com/IskXCr/CS205-Project-2-Calculator)
 
+![image-20221018000722979](markdown_img/sample0.png)
+
 ## Part 1 - Analysis
 
 The project asks the student to write a calculator that is much better than that in Project 1.
@@ -73,9 +75,9 @@ The following algorithms and libraries, methods are **implemented** or **applied
 
    d. Functions are written in such a way that some branches are ignored and explicitly stated in the comment of the function itself to reduce branches. For example, ``NULL`` checks won't be performed if the function already states that it won't accept such. ***However, all scenarios that are not explicitly stated to be avoided are considered in the best possible way***.
 
-   ![image-20221016230640142](C:\Users\IskXCr\AppData\Roaming\Typora\typora-user-images\image-20221016230640142.png)
+   ![image-20221016230640142](markdown_img/sample1.png)
 
-   ![image-20221016230702820](C:\Users\IskXCr\AppData\Roaming\Typora\typora-user-images\image-20221016230702820.png)
+   ![image-20221016230702820](markdown_img/sample2.png)
 
 ## Part 2 - Code
 
