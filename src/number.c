@@ -312,7 +312,7 @@ int sap_num2int(sap_num op)
     return val;
 }
 
-/* Return TRUE if the number is zero. */
+/* Return TRUE if the number is zero. NULL not considered. */
 int sap_is_zero(sap_num op)
 {
     char *ptr = op->n_val;
@@ -335,7 +335,7 @@ int sap_is_near_zero(sap_num op, int scale)
     return TRUE;
 }
 
-/* Return TRUE IFF the operand is negative. 0 is positive. */
+/* Return TRUE IFF the operand is negative. 0 is positive. NULL not considered. */
 int sap_is_neg(sap_num op)
 {
     return !sap_is_zero(op) && (op->n_sign == NEG);

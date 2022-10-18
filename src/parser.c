@@ -1,4 +1,5 @@
 /* Source file for SAP parser. */
+#include "global.h"
 #include "sapdefs.h"
 #include "sap.h"
 #include "parser.h"
@@ -81,7 +82,7 @@ int sap_get_in_prec(sap_token token)
     {
     case _SAP_END_OF_STMT:
     case _SAP_STACK_SENTINEL:
-        return -10;
+        return INT_MIN;
 
     case _SAP_ASSIGN:
         return 1;
@@ -123,7 +124,7 @@ int sap_get_out_prec(sap_token token)
     {
     case _SAP_END_OF_STMT:
     case _SAP_STACK_SENTINEL:
-        return -10;
+        return INT_MIN;
 
     case _SAP_ASSIGN:
         return 2;
@@ -483,6 +484,13 @@ static sap_token *sap_parse_expr_impl(char *src)
         /* Fetch next token */
         next = _sap_parse_next_token(&src);
 
+        if(debug)
+        {
+            char *p = _sap_debug_token2text(next);
+            printf("[Parser] Token received: %s\n", p);
+            free(p);
+        }
+
         /* If the operator is a '-', and (if there is no previous token, or the previous token is an operator) */
         if (next->type == _SAP_MINUS && (ptr <= arr || sap_is_operator(*(ptr - 1))))
         {
@@ -544,9 +552,11 @@ void sap_free_tokens(sap_token **array)
 
 /* Debug functions. They are forbidden to use in production environments. */
 
+#define _DB_OUT_SIZE 10000
+
 /* (Deprecated) Print token info for debug use. This function is not strictly written and lacks generosity.
    Forbidden to use in production.
-   The upper bound length for subexpressions is capped at 10000, otherwise segmentation fault. */
+   The upper bound length for subexpressions is capped at _DB_OUT_SIZE, otherwise segmentation fault. */
 char *_sap_debug_token2text(sap_token token)
 {
     if (token == NULL)
@@ -554,7 +564,7 @@ char *_sap_debug_token2text(sap_token token)
         printf("NULL token.\n");
         exit(1);
     }
-    char *buf = (char *)malloc(10000); /* Buffer for this whole token. */
+    char *buf = (char *)malloc(_DB_OUT_SIZE); /* Buffer for this whole token. */
     if (buf == NULL)
     {
         printf("Out of memory on debug print.\n");
@@ -564,7 +574,7 @@ char *_sap_debug_token2text(sap_token token)
     char *buf_arg = NULL; /* Buffer for sub-tokens. */
     if (token->arg_tokens != NULL)
     {
-        buf_arg = (char *)malloc(10000);
+        buf_arg = (char *)malloc(_DB_OUT_SIZE);
         if (buf_arg == NULL)
         {
             printf("Out of memory on debug print.\n");
@@ -597,7 +607,9 @@ void _sap_debug_print_token_arr(sap_token *token)
     sap_token *ptr64 = token;
     while ((*ptr64)->type != _SAP_END_OF_STMT)
     {
-        printf("[Parser Debugger] Listing token: %s\n", _sap_debug_token2text(*ptr64));
+        char *p = _sap_debug_token2text(*ptr64);
+        printf("[Parser Debugger] Listing token: %s\n", p);
+        free(p);
         ptr64++;
     }
 }

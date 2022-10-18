@@ -57,7 +57,7 @@ show_instruction()
 static void
 show_debug()
 {
-    printf("==========>CAUTION: DEBUG mode enabled.\n");
+    printf("==========>CAUTION: DEBUG mode enabled. Showing tokens upon input and parser internal operations.\n");
 }
 
 /* Process argument to apply the settings. */
@@ -163,6 +163,9 @@ show_history(void)
 
 int main(int argc, char **argv)
 {
+    /* Init libraries */
+    sap_init_lib();
+
     /* Parse arguments first. */
     parse_args(argc, argv);
     if (quiet != TRUE)
@@ -172,12 +175,11 @@ int main(int argc, char **argv)
     }
     if (debug)
     {
+        printf("[Debug] Perform built-in test.\n");
         test();
-        exit(0);
+        printf("[Debug] Built-in test completed.\n");
+        show_debug();
     }
-
-    /* Init libraries */
-    sap_init_lib();
 
     /* Start executing */
     sap_num result = NULL;

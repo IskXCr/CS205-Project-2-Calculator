@@ -15,6 +15,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <limits.h>
 
 /* Definitions */
 

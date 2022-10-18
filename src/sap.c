@@ -25,7 +25,10 @@ static lut_table symbols;
    The function that have called this will by themselves free the resource if required. */
 static void handle(void)
 {
-    printf("Internal Exception occurred. Restoring to last state and releasing resources.\n");
+    // do nothing.
+    if (debug)
+        printf("Internal exception.\n");
+    return;
 }
 
 /* Initialize the whole sap library. This function can be called only once. */
@@ -58,6 +61,7 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
         out_of_memory();
     tptr = tokens;
     stk = sap_new_stack();
+    sap_stack_push(stk, sap_get_sentinel());
 
     /* While the tokens array is not empty */
     while ((*tptr)->type != _SAP_END_OF_STMT)
@@ -80,15 +84,22 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
         }
         else if ((*tptr)->type == _SAP_PAREN_R) /* If the input is right parenthese */
         {
-            while (sap_stack_top(stk)->type != _SAP_PAREN_L)
-            {
+            /* Pop the elements while the top of the stack is not _SAP_STACK_SENTINEL */
+            while (sap_stack_top(stk)->type != _SAP_PAREN_L && sap_stack_top(stk)->type != _SAP_STACK_SENTINEL)
                 *rptr++ = sap_stack_pop(stk);
-                if (sap_stack_empty(stk))
+
+            if (sap_stack_top(stk)->type == _SAP_STACK_SENTINEL)
+            {
+                sap_warn("Invalid postfix expression with missing parenthese.. No result is returned. ", 0);
+
+                if (debug)
                 {
-                    sap_warn("Invalid postfix expression. No result is returned. ", 0);
-                    free(result);
-                    return NULL;
+                    printf("[Debug-Postfix] Showing tokens: \n");
+                    _sap_debug_print_token_arr(tokens);
                 }
+                free(result);
+                sap_free_stack(&stk);
+                return NULL;
             }
             sap_stack_pop(stk);
         }
@@ -96,8 +107,10 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
     }
 
     /* Pop the remaining operators */
-    while (sap_stack_has_element(stk))
+    while (sap_stack_has_element(stk) && sap_stack_top(stk)->type != _SAP_STACK_SENTINEL)
         *rptr++ = sap_stack_pop(stk);
+
+    sap_free_stack(&stk);
 
     /* Clean up */
     *rptr = *tptr; /* IMPORTANT: _SAP_END_OF_STMT placed. */
@@ -143,7 +156,7 @@ static sap_token _sap_evaluate_operand(sap_token token)
 }
 
 /* Evaluate an expression in tokens. Resource will be freed thereafter. (Intermediate resources are freed)
-   Return NULL if an array of empty statement is passed as the argument.
+   Return NULL if an array of empty statement is passed as the argument, or when failed to parse the expression.
    Partial reference: https://www.engr.mun.ca/~theo/Misc/exp_parsing.htm */
 static sap_num _sap_evaluate(sap_token **tokens)
 {
@@ -172,11 +185,21 @@ static sap_num _sap_evaluate(sap_token **tokens)
 
     /* Initialization */
     ptr = ptr0 = _sap_to_postfix(*tokens);
+    if (ptr0 == NULL)
+    {
+        sap_warn("Evaluator: Failed the parse the expression.", 0);
+        return NULL;
+    }
+
     stk = sap_new_stack();
     sap_stack_push(stk, sap_get_sentinel());
 
     // debug
-    // _sap_debug_print_token_arr(ptr0);
+    if (debug)
+    {
+        printf("[Debug-Evaluator] Showing tokens: \n");
+        _sap_debug_print_token_arr(*tokens);
+    }
 
     while ((*ptr)->type != _SAP_END_OF_STMT)
     {

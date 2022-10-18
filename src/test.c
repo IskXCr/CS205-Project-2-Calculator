@@ -25,7 +25,6 @@ static void test_sap(void);
 /* Perform all test routines. */
 void test(void)
 {
-    sap_init_number_lib();
     test_number();
     test_lut();
     test_parser();
@@ -36,14 +35,43 @@ void test(void)
 static void
 test_number(void)
 {
-    sap_num n1 = sap_str2num("-1");
-    sap_num n2 = sap_str2num("2");
-    printf("Op1: %s\n", sap_num2str(n1));
-    printf("Op2: %s\n", sap_num2str(n2));
-    printf("Mul: %s\n", sap_num2str(sap_mul(n1, n2, 4)));
-    printf("Div: %s\n", sap_num2str(sap_div(n1, n2, 4)));
-    printf("sqrt(op2): %s\n", sap_num2str(sap_sqrt(n2, 9)));
-    printf("Pow(-2.3, 7): %s\n", sap_num2str(sap_raise(n1, n2, 1)));
+    sap_num n1 = sap_str2num("-1.03");
+    sap_num n2 = sap_str2num("2.57");
+    sap_num tmp; /* Intermediate result */
+    char *p; /* For storing strings */
+
+    p = sap_num2str(n1);
+    printf("Op1: %s\n",p);
+    free(p);
+    
+    p = sap_num2str(n2);
+    printf("Op2: %s\n", p);
+    free(p);
+
+    tmp = sap_mul(n1, n2, 4);
+    p = sap_num2str(tmp);
+    sap_free_num(&tmp);
+    printf("Mul: %s\n", p);
+    free(p);
+
+    tmp = sap_div(n1, n2, 4);
+    p = sap_num2str(tmp);
+    sap_free_num(&tmp);
+    printf("Div: %s\n", p);
+    free(p);
+
+    tmp = sap_sqrt(n2, 9);
+    p = sap_num2str(tmp);
+    sap_free_num(&tmp);
+    printf("sqrt(op2): %s\n", p);
+    free(p);
+
+    tmp = sap_raise(n1, n2, 1);
+    p = sap_num2str(tmp);
+    sap_free_num(&tmp);
+    printf("Pow(op1, op2): %s\n", p);
+    free(p);
+
     sap_free_num(&n1);
     sap_free_num(&n2);
 }
