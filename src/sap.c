@@ -108,13 +108,16 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
     return result;
 }
 
-/* A simple routine for evaluating a variable or a number node to an actual value, performing the possible negate.
-   This routine is used as an evaluation of the operand.
+/* A simple routine for evaluating a **variable** or a **number** node to an actual value, performing the possible negate.
+   This routine is used as an evaluation of the operand. If the operand cannot be evaluated, return NULL.
    The returned pointer is the token itself. */
 static sap_token _sap_evaluate_operand(sap_token token)
 {
     if (token->type != _SAP_NUMBER && token->type != _SAP_VARIABLE)
-        return token;
+    {
+        sap_warn("SAP error: operand cannot be evaluated.", 0);
+        return NULL;
+    }
 
     if (token->type == _SAP_VARIABLE)
     {
@@ -234,17 +237,25 @@ static sap_num _sap_evaluate(sap_token **tokens)
             /* ASSIGN is ignored. */
             if ((*ptr)->type == _SAP_ASSIGN)
             {
-                tmp2 = sap_copy_num(_sap_evaluate_operand(sap_stack_pop(stk))->val);
+                sap_token tok_r = _sap_evaluate_operand(sap_stack_pop(stk));
                 sap_token tok_l = sap_stack_pop(stk);
                 if (tok_l->type != _SAP_VARIABLE)
                 {
                     sap_warn("Assignment can only be made to a lvalue.", 0);
+                    tmp2 = sap_copy_num(_zero_);
+                    tmp0 = sap_copy_num(_zero_);
+                }
+                else if (tok_r == NULL)
+                {
+                    sap_warn("Right operand on assignment cannot be evaluated. Variable name: ", 1, tok_l->name, FALSE);
+                    tmp2 = sap_copy_num(_zero_);
                     tmp0 = sap_copy_num(_zero_);
                 }
                 else
                 {
-                    lut_insert(symbols, tok_l->name, tmp2);
+                    tmp2 = sap_copy_num(tok_r->val);
                     tmp0 = sap_copy_num(tmp2);
+                    lut_insert(symbols, tok_l->name, tmp2);
                 }
             }
             else

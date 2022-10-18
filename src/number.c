@@ -166,7 +166,7 @@ void sap_free_num(sap_num *op)
     *op = NULL;
 }
 
-/* Make a copy of the number by solely increasing the reference count. */
+/* Make a copy of the number by solely increasing the reference count. The argument cannot be NULL. */
 sap_num sap_copy_num(sap_num src)
 {
     src->n_refs++;

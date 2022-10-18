@@ -514,7 +514,8 @@ sap_token *sap_parse_expr(char *src)
     return sap_parse_expr_impl(src);
 }
 
-/* Modify this token object to a number if possible. All related resource will be freed. */
+/* Modify this token object to a number if possible. Negate the operand if required and set the flag to FALSE.
+   All related resource will be freed. */
 void sap_token_trans2num(sap_token token, sap_num val)
 {
     sap_free_num(&(token->val));
