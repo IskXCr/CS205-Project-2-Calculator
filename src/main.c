@@ -37,7 +37,7 @@ usage(const char *progname)
            "  -h  --help     print this usage and exit\n",
            "  -q  --quiet    don't print initial banner\n",
            "  -v  --version  print version information and exit\n",
-           "  -d  --debug    enable debug features\n");
+           "  -d  --debug    enable debug features (experimental)\n");
 }
 
 static void
