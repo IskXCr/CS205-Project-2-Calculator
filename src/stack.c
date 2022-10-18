@@ -51,7 +51,8 @@ int sap_stack_empty(stack s)
     return !sap_stack_has_element(s);
 }
 
-/* Push an element to the stack. The stack will dynamically increase its size. */
+/* Push the reference of an element to the stack. The stack will dynamically increase its size. 
+   No copy is saved. Only the sap_token (pointer) is placed into the container. */
 void sap_stack_push(stack s, sap_token element)
 {
     if (s->ptr - s->base == s->max_size)

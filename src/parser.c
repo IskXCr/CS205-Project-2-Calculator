@@ -235,6 +235,7 @@ sap_token sap_get_sentinel(void)
 {
     if (sentinel == NULL)
         sentinel = _sap_new_token(_SAP_STACK_SENTINEL, NULL, NULL, NULL);
+    return sentinel;
 }
 
 /* Get the length of token_array for convenience. The length contains _SAP_END_OF_STMT. */
