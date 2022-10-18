@@ -269,16 +269,15 @@ static sap_token _sap_parse_next_token(char **lineptr)
             type = _SAP_END_OF_STMT;
         else if (*ptr == '(') /* If it is a sub expression */
         {
-            char *ptr2 = ptr + 1;
+            char *buf0; /* Storing sub expression */
+            int len;    /* Length of the sub expression */
+            char *ptr2; /* Start of the sub expression*/
+
+            ptr2 = ptr + 1;
             ptr = find_right_paren(ptr2);
 
-            if (*ptr == ')')
-                ptr++;
-            else /* Unexpected unmatch of parentheses */
-                sap_warn("Unmatched parentheses. ", 0);
-
-            char *buf0;               /* Storing sub expression */
-            int len = ptr - ptr2 - 1; /* Length of the sub expression */
+            /* Copy the expression and evaluate first */
+            len = ptr - ptr2;
             buf0 = (char *)malloc(len + 1);
             memcpy(buf0, ptr2, len);
             *(buf0 + len) = '\0';
@@ -288,6 +287,12 @@ static sap_token _sap_parse_next_token(char **lineptr)
 
             /* Clean up. */
             free(buf0);
+
+            /* Error handling */
+            if (*ptr == ')')
+                ptr++;
+            else /* Unexpected unmatch of parentheses */
+                sap_warn("Sub-expression: unmatched parentheses. ", 0);
         }
         else
         {
@@ -338,6 +343,10 @@ static sap_token _sap_parse_next_token(char **lineptr)
                     --ptr;
                 }
                 break;
+            case ')':
+                sap_warn("Unmatched parenthese: ", 1, _sap_op_to_str(*ptr), TRUE);
+                type = _SAP_END_OF_STMT;
+                break;
             case '!':
                 if (*++ptr == '=')
                     type = _SAP_NEQ;
@@ -345,10 +354,12 @@ static sap_token _sap_parse_next_token(char **lineptr)
                 {
                     --ptr;
                     sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr), TRUE);
+                    type = _SAP_END_OF_STMT;
                 }
                 break;
             default:
                 sap_warn("Unknown operand: ", 1, _sap_op_to_str(*ptr), TRUE);
+                type = _SAP_END_OF_STMT;
                 break;
             }
             ptr++;
@@ -416,6 +427,8 @@ static sap_token _sap_parse_next_token(char **lineptr)
         if (*ptr == '(') /* Calling functions */
         {
             sap_token_type type;
+            sap_token *arg_tokens = NULL; /* Initialized to NULL. */
+
             if (strcmp(buf, _SAP_TEXT_FUNC_SIN) == 0)
                 type = _SAP_SIN;
             else if (strcmp(buf, _SAP_TEXT_FUNC_COS) == 0)
@@ -434,24 +447,31 @@ static sap_token _sap_parse_next_token(char **lineptr)
                 sap_warn("Unrecognized function: ", 1, buf, FALSE);
             }
 
-            char *ptr3 = ptr + 1;
-            ptr = find_right_paren(ptr3);
+            char *buf0; /* Storing sub expression */
+            int len;    /* Length of the sub expression */
+            char *ptr2; /* Start of the sub expression*/
 
-            if (*ptr == ')')
-                ptr++;
-            else /* Unexpected unmatch of parentheses */
-                sap_warn("Unmatched parentheses. ", 0);
+            ptr2 = ptr + 1;
+            ptr = find_right_paren(ptr2);
 
-            char *buf0;               /* Storing sub expression */
-            int len = ptr - ptr3 - 1; /* Length of the sub expression */
+            /* Copy the expression and evaluate first */
+            len = ptr - ptr2;
             buf0 = (char *)malloc(len + 1);
-            memcpy(buf0, ptr3, len);
+            memcpy(buf0, ptr2, len);
             *(buf0 + len) = '\0';
 
-            result = _sap_new_token(type, NULL, NULL, sap_parse_expr(buf0));
+            arg_tokens = sap_parse_expr(buf0);
+
+            result = _sap_new_token(type, NULL, NULL, arg_tokens);
 
             /* Clean up. */
             free(buf0);
+
+            /* Error handling */
+            if (*ptr == ')')
+                ptr++;
+            else /* Unexpected unmatch of parentheses */
+                sap_warn("Sub-expression: unmatched parentheses. ", 0);
         }
         else
         {

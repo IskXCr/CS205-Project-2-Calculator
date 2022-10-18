@@ -136,7 +136,14 @@ static sap_token _sap_evaluate_operand(sap_token token)
 
     if (token->type == _SAP_NUMBER)
     {
-
+        if (token->negate) /* If the result should be negated */
+        {
+            sap_num tmp = sap_replicate_num(token->val);
+            sap_free_num(&(token->val));
+            token->val = tmp;
+            sap_negate(token->val);
+            token->negate = FALSE;
+        }
     }
     else if (token->type == _SAP_VARIABLE)
     {
@@ -154,7 +161,7 @@ static sap_token _sap_evaluate_operand(sap_token token)
         sap_num res = _sap_evaluate(&(token->arg_tokens));
         if (res == NULL)
         {
-            sap_warn("Invalid sub expression.", 0);
+            sap_warn("Invalid sub-expression.", 0);
             sap_token_trans2num(token, _zero_);
         }
         else
@@ -166,7 +173,7 @@ static sap_token _sap_evaluate_operand(sap_token token)
     else if (sap_is_func(token))
     {
         sap_num tmp0, tmp1; /* Temporary results */
-        
+
         tmp0 = _sap_evaluate(&(token->arg_tokens));
         if (tmp0 == NULL)
         {
@@ -205,14 +212,6 @@ static sap_token _sap_evaluate_operand(sap_token token)
         sap_free_num(&tmp1);
     }
 
-    if (token->negate) /* If the result should be negated */
-    {
-        sap_num tmp = sap_replicate_num(token->val);
-        sap_free_num(&(token->val));
-        token->val = tmp;
-        sap_negate(token->val);
-        token->negate = FALSE;
-    }
     return token;
 }
 
