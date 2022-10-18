@@ -66,6 +66,7 @@ typedef enum sap_token_type
 
     _SAP_VARIABLE, /* Variable name */
     _SAP_NUMBER,   /* Number */
+    _SAP_SUB_EXPR, /* Sub expression: Expression enclosed in a pair of parentheses. */
     
     _SAP_FUNC_CALL /* Function calls */
 } sap_token_type;

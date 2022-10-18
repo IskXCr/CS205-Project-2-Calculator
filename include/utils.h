@@ -44,4 +44,6 @@ char **fetch_expr(char *src);
 
 void free_expr_array(char ***src);
 
+char *find_right_paren(char *lineptr);
+
 #endif

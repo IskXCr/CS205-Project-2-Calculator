@@ -32,6 +32,7 @@ int sap_is_operand(sap_token token)
     {
     case _SAP_VARIABLE:
     case _SAP_NUMBER:
+    case _SAP_SUB_EXPR:
         return TRUE;
 
     default:
@@ -263,8 +264,31 @@ static sap_token _sap_parse_next_token(char **lineptr)
     if (!isalnum(*ptr) && *ptr != '_') /* If isn't a function call, a variable or a number. It is possible to be '\0' */
     {
         sap_token_type type;
+        sap_token *arg_tokens = NULL;
         if (*ptr == '\0')
             type = _SAP_END_OF_STMT;
+        else if (*ptr == '(') /* If it is a sub expression */
+        {
+            char *ptr2 = ptr + 1;
+            ptr = find_right_paren(ptr2);
+
+            if (*ptr == ')')
+                ptr++;
+            else /* Unexpected unmatch of parentheses */
+                sap_warn("Unmatched parentheses. ", 0);
+
+            char *buf0;               /* Storing sub expression */
+            int len = ptr - ptr2 - 1; /* Length of the sub expression */
+            buf0 = (char *)malloc(len + 1);
+            memcpy(buf0, ptr2, len);
+            *(buf0 + len) = '\0';
+
+            type = _SAP_SUB_EXPR;
+            arg_tokens = sap_parse_expr(buf0);
+
+            /* Clean up. */
+            free(buf0);
+        }
         else
         {
             switch (*ptr)
@@ -314,12 +338,6 @@ static sap_token _sap_parse_next_token(char **lineptr)
                     --ptr;
                 }
                 break;
-            case '(':
-                type = _SAP_PAREN_L;
-                break;
-            case ')':
-                type = _SAP_PAREN_R;
-                break;
             case '!':
                 if (*++ptr == '=')
                     type = _SAP_NEQ;
@@ -336,7 +354,7 @@ static sap_token _sap_parse_next_token(char **lineptr)
             ptr++;
         }
 
-        result = _sap_new_token(type, NULL, NULL, NULL);
+        result = _sap_new_token(type, NULL, NULL, arg_tokens);
     }
     else if (isdigit(*ptr) || *ptr == '.') /* A number */
     {
@@ -389,9 +407,9 @@ static sap_token _sap_parse_next_token(char **lineptr)
         /* Skip function call blanks */
         while (isspace(*ptr))
             ptr++;
-        /* Meet the first non-blank character. 
+        /* Meet the first non-blank character.
            If ptr is actually moved in the previous while loop, decrease. */
-        if (*ptr != '(' && ptr > ptr2) 
+        if (*ptr != '(' && ptr > ptr2)
             ptr--;
 
         /* Judge whether it is a function or a variable. */
@@ -417,15 +435,12 @@ static sap_token _sap_parse_next_token(char **lineptr)
             }
 
             char *ptr3 = ptr + 1;
-            while (*ptr != ')' && *ptr != '\0')
-                ptr++;
+            ptr = find_right_paren(ptr3);
 
             if (*ptr == ')')
                 ptr++;
             else /* Unexpected unmatch of parentheses */
-            {
                 sap_warn("Unmatched parentheses. ", 0);
-            }
 
             char *buf0;               /* Storing sub expression */
             int len = ptr - ptr3 - 1; /* Length of the sub expression */
@@ -484,7 +499,7 @@ static sap_token *sap_parse_expr_impl(char *src)
         /* Fetch next token */
         next = _sap_parse_next_token(&src);
 
-        if(debug)
+        if (debug)
         {
             char *p = _sap_debug_token2text(next);
             printf("[Parser] Token received: %s\n", p);

@@ -20,7 +20,7 @@ void out_of_memory()
     exit(1);
 }
 
-/* Output the warning message, following by first count of comments, and then 
+/* Output the warning message, following by first count of comments, and then
    a list of comments and int FLAG to indicate whether to free the corresponding pointer after use.
    Then let utils library handle the exception.
    The char* arguments will be **consumed** if the flag following the char* is TRUE, meaning automatically freed after use. */
@@ -48,16 +48,16 @@ void sap_warn(char *msg, int cnt, ...)
         (*_handler_exc)();
 }
 
-#if !defined (__unix__) && !(defined (__APPLE__) && defined (__MACH__)) 
+#if !defined(__unix__) && !(defined(__APPLE__) && defined(__MACH__))
 #define _UTILS_BUF_DEFAULT_SIZE 100
 
 /* Like getline() in a standard POSIX library. However, it does not set error flags, and simply exits if there is no enough space. */
 ssize_t getline0(char **lineptr, size_t *size, FILE *file)
 {
-    size_t len;   /* Length of the current buf. Dynamically allocated. */
-    char *buf; /* Buf used to store the result. */
-    char *ptr; /* Next free position in the buffer */
-    int c;     /* Store the character */
+    size_t len; /* Length of the current buf. Dynamically allocated. */
+    char *buf;  /* Buf used to store the result. */
+    char *ptr;  /* Next free position in the buffer */
+    int c;      /* Store the character */
 
     /* Initialization */
     len = _UTILS_BUF_DEFAULT_SIZE;
@@ -69,7 +69,7 @@ ssize_t getline0(char **lineptr, size_t *size, FILE *file)
     *lineptr = buf;
     *size = len;
 
-    while ((c = fgetc(file)) != '\0' && c != EOF && c != '\n' )
+    while ((c = fgetc(file)) != '\0' && c != EOF && c != '\n')
     {
         if (ptr - buf == len)
         {
@@ -87,7 +87,7 @@ ssize_t getline0(char **lineptr, size_t *size, FILE *file)
     if (c == '\n')
         *ptr++ = c;
     *ptr = '\0';
-    
+
     return (ssize_t)(ptr - buf);
 }
 #endif
@@ -119,7 +119,6 @@ char **fetch_expr(char *src)
     char *tmp;     /* Store memory allocation result */
     int len0;      /* Store token length */
     char *token;
-
 
     /* Initialization */
     src0 = (char *)malloc(srclen);
@@ -170,4 +169,24 @@ void free_expr_array(char ***src)
         free(*ptr++);
     free(*src);
     *src = NULL;
+}
+
+/* Find the next matching right parenthese, assuming the matching left parentheses is already found before lineptr.
+   Return a pointer to the right ending parentheses. The pointer will point to the end of string if not found.*/
+char *find_right_paren(char *lineptr)
+{
+    int cnt = 0;
+    while (*lineptr != '\0')
+    {
+        if (*lineptr == '(')
+            cnt++;
+        else if (*lineptr == ')')
+        {
+            cnt--;
+            if (cnt == -1)
+                break;
+        }
+        lineptr++;
+    }
+    return lineptr;
 }

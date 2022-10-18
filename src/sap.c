@@ -121,18 +121,24 @@ static sap_token *_sap_to_postfix(sap_token *tokens)
     return result;
 }
 
+static sap_num _sap_evaluate(sap_token **tokens);
+
 /* A simple routine for evaluating a **variable** or a **number** node to an actual value, performing the possible negate.
    This routine is used as an evaluation of the operand. If the operand cannot be evaluated, return NULL.
    The returned pointer is the token itself. */
 static sap_token _sap_evaluate_operand(sap_token token)
 {
-    if (token->type != _SAP_NUMBER && token->type != _SAP_VARIABLE)
+    if (!sap_is_operand(token))
     {
         sap_warn("SAP error: operand cannot be evaluated.", 0);
         return NULL;
     }
 
-    if (token->type == _SAP_VARIABLE)
+    if (token->type == _SAP_NUMBER)
+    {
+
+    }
+    else if (token->type == _SAP_VARIABLE)
     {
         sap_num res = lut_find(symbols, token->name);
         if (res == NULL)
@@ -142,6 +148,61 @@ static sap_token _sap_evaluate_operand(sap_token token)
             sap_token_trans2num(token, res);
             sap_free_num(&res);
         }
+    }
+    else if (token->type == _SAP_SUB_EXPR)
+    {
+        sap_num res = _sap_evaluate(&(token->arg_tokens));
+        if (res == NULL)
+        {
+            sap_warn("Invalid sub expression.", 0);
+            sap_token_trans2num(token, _zero_);
+        }
+        else
+        {
+            sap_token_trans2num(token, res);
+            sap_free_num(&res);
+        }
+    }
+    else if (sap_is_func(token))
+    {
+        sap_num tmp0, tmp1; /* Temporary results */
+        
+        tmp0 = _sap_evaluate(&(token->arg_tokens));
+        if (tmp0 == NULL)
+        {
+            sap_warn("Invalid arguments.", 0);
+            tmp0 = sap_copy_num(_zero_);
+        }
+        switch (token->type)
+        {
+        case _SAP_SQRT:
+            tmp1 = sap_sqrt(tmp0, tmp0->n_scale);
+            break;
+        case _SAP_SIN:
+            tmp1 = sap_sin(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+            break;
+        case _SAP_COS:
+            tmp1 = sap_cos(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+            break;
+        case _SAP_ARCTAN:
+            tmp1 = sap_arctan(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+            break;
+        case _SAP_LN:
+            tmp1 = sap_ln(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+            break;
+        case _SAP_EXP:
+            tmp1 = sap_exp(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
+            break;
+        case _SAP_FUNC_CALL:
+            /* Reserved for future function table invoke. */
+        default:
+            sap_warn("Unsupported operation", 0);
+            tmp1 = sap_copy_num(tmp0);
+        }
+        /* Clean up*/
+        sap_token_trans2num(token, tmp1);
+        sap_free_num(&tmp0);
+        sap_free_num(&tmp1);
     }
 
     if (token->negate) /* If the result should be negated */
@@ -187,7 +248,7 @@ static sap_num _sap_evaluate(sap_token **tokens)
     ptr = ptr0 = _sap_to_postfix(*tokens);
     if (ptr0 == NULL)
     {
-        sap_warn("Evaluator: Failed the parse the expression.", 0);
+        sap_warn("Evaluator: Failed the parse the expression to postfix.", 0);
         return NULL;
     }
 
@@ -197,70 +258,21 @@ static sap_num _sap_evaluate(sap_token **tokens)
     // debug
     if (debug)
     {
-        printf("[Debug-Evaluator] Showing tokens: \n");
+        printf("[Evaluator Debugger] Showing tokens: \n");
         _sap_debug_print_token_arr(*tokens);
     }
 
     while ((*ptr)->type != _SAP_END_OF_STMT)
     {
-        if (sap_is_func(*ptr))
-        {
-            tmp0 = _sap_evaluate(&((*ptr)->arg_tokens));
-            if (tmp0 == NULL)
-            {
-                sap_warn("Invalid arguments.", 0);
-                tmp0 = sap_copy_num(_zero_);
-            }
-            switch ((*ptr)->type)
-            {
-            case _SAP_SQRT:
-                tmp1 = sap_sqrt(tmp0, tmp0->n_scale);
-                break;
-            case _SAP_SIN:
-                tmp1 = sap_sin(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
-                break;
-            case _SAP_COS:
-                tmp1 = sap_cos(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
-                break;
-            case _SAP_ARCTAN:
-                tmp1 = sap_arctan(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
-                break;
-            case _SAP_LN:
-                tmp1 = sap_ln(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
-                break;
-            case _SAP_EXP:
-                tmp1 = sap_exp(tmp0, MAX(tmp0->n_scale, _TRANS_FUNC_MIN_SCALE));
-                break;
-            case _SAP_FUNC_CALL:
-                /* Reserved for future function table invoke. */
-            default:
-                sap_warn("Unsupported operation", 0);
-                tmp1 = sap_copy_num(tmp0);
-            }
-
-            /* Clean up*/
-            sap_token_trans2num(*ptr, tmp1);
-            sap_free_num(&tmp0);
-            sap_free_num(&tmp1);
-            sap_free_num(&tmp2);
-            tmp0 = NULL;
-            tmp1 = NULL;
-            tmp2 = NULL;
-
-            /* Push the calculated result. */
+        if (sap_is_operand(*ptr))
             sap_stack_push(stk, *ptr);
-        }
-        else if ((*ptr)->type == _SAP_VARIABLE || (*ptr)->type == _SAP_NUMBER)
-        {
-            sap_stack_push(stk, *ptr);
-        }
         else /* An operator */
         {
             /* In the evaluation process, only one of the node is evaluated and updated. */
             /* ASSIGN is ignored. */
             if ((*ptr)->type == _SAP_ASSIGN)
             {
-                sap_token tok_r = _sap_evaluate_operand(sap_stack_pop(stk));
+                sap_token tok_r = sap_stack_pop(stk);
                 sap_token tok_l = sap_stack_pop(stk);
                 if (tok_l->type != _SAP_VARIABLE)
                 {
@@ -276,6 +288,7 @@ static sap_num _sap_evaluate(sap_token **tokens)
                 }
                 else
                 {
+                    _sap_evaluate_operand(tok_r);
                     tmp2 = sap_copy_num(tok_r->val);
                     tmp0 = sap_copy_num(tmp2);
                     lut_insert(symbols, tok_l->name, tmp2);
@@ -357,7 +370,7 @@ static sap_num _sap_evaluate(sap_token **tokens)
 
     sap_num result; /* Store the result */
     sap_token final = sap_stack_pop(stk);
-    if (final->type == _SAP_VARIABLE || final->type == _SAP_NUMBER)
+    if (final != NULL && sap_is_operand(final))
         result = sap_copy_num(_sap_evaluate_operand(final)->val);
     else
     {
@@ -372,6 +385,14 @@ cleanup:
     sap_free_num(&tmp1);
     sap_free_stack(&stk);
     sap_free_tokens(tokens);
+
+    // debug
+    if (debug)
+    {
+        char *p = sap_num2str(result);
+        printf("[Evaluator Debugger] Result: %s\n", p);
+        free(p);
+    }
 
     return result;
 }
