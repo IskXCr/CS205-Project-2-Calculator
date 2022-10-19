@@ -89,7 +89,17 @@ static void _sap_truncate(sap_num op, int scale, int round)
         out_of_memory();
     memcpy(new_ptr, ptr, op->n_len + scale);
     if (round && *(ptr + op->n_len + scale) >= 5)
-        (*(new_ptr + op->n_len + scale - 1))++;
+    {
+        sap_num res = NULL;
+        sap_num rd = sap_new_num(1, scale);
+
+        rd->n_sign = op->n_sign;
+        *(rd->n_val + rd->n_len + rd->n_scale - 1) = 1; /* Assign it a 1 at the scale. */
+        res = sap_add(op, rd, scale);
+        sap_free_num(&rd);
+        memcpy(new_ptr, res->n_ptr, op->n_len + scale);
+        sap_free_num(&res);
+    }
     free(ptr);
     op->n_scale = scale;
     op->n_ptr = op->n_val = new_ptr;
