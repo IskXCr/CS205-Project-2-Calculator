@@ -332,6 +332,9 @@ int sap_is_near_zero(sap_num op, int scale)
     for (int i = 0; i < end - 1; ++i)
         if (*(op->n_val + op->n_len + i) != 0)
             return FALSE;
+    for (int i = 0; i < op->n_len; ++i)
+        if (*(op->n_val + i) != 0)
+            return FALSE;
     return TRUE;
 }
 
@@ -985,8 +988,8 @@ static sap_num _sap_sqrt_impl(sap_num op, int scale)
     /* From calculation we know that this iteration must work. */
 
     /* Major reference for calculating scales: See `number.c` in the source code of GNU bc. */
-    int rscale = MAX(op->n_scale, scale);                        /* The final real scale used */
-    int cscale = (sap_compare(op, _one_) > 0) ? 3 : op->n_scale; /* Current scale for arithmetic operations */
+    int rscale = MAX(op->n_scale, scale);                            /* The final real scale used */
+    int cscale = (sap_compare(op, _one_) > 0) ? 3 : op->n_scale + 1; /* Current scale for arithmetic operations */
 
     int done = FALSE;
 
