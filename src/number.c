@@ -1123,20 +1123,23 @@ static sap_num _sap_raise_impl(sap_num base, sap_num expo, int scale)
     sap_num result; /* Result of the process. */
     sap_num expo0;  /* Replicated exponent for subtraction. */
     sap_num tmp1;   /* Temporary variable */
+    int rscale;     /* Result scale */
+    int cscale;     /* Scale used during calculation */
 
-    /* Initialize variables. */
-    int rscale = MAX(base->n_scale, scale);
-    int cscale = rscale * sap_num2int(expo); /* It is easy to accumulate errors when a wrong scale is selected.
-                                                Try to maximize the scale here. */
+    /* Initialize other variables. */
     int do_reverse = FALSE;
     result = sap_replicate_num(base);
     expo0 = sap_replicate_num(expo);
 
-    if (sap_compare(expo, _zero_) < 0)
+    if (sap_compare(expo0, _zero_) < 0)
     {
         do_reverse = TRUE;
-        expo0->n_sign = -expo0->n_sign;
+        sap_negate(expo0);
     }
+
+    rscale = MAX(base->n_scale, scale);
+    cscale = rscale * sap_num2int(expo0); /* It is easy to accumulate errors when a wrong scale is selected.
+                                             Try to maximize the scale here. */
 
     /* Minus one first, for replicating the number to its place. */
     tmp1 = sap_sub(expo0, _one_, 0);
