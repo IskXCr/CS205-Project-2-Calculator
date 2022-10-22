@@ -81,7 +81,7 @@ typedef struct sap_token_struct
 {
     sap_token_type type; /* Type of this token. */
     char *name;          /* If it is a variable or function call, stores its name in a copy. Else it is NULL. Must be copied when using. */
-    sap_num val;         /* If it is a number, stores the value, and hen use this value ensure that it is copied. Else it is NULL. */
+    sap_num val;         /* If it is a number, stores the value, and when use this value please ensure that it is copied (referenced). Else it is NULL. */
 
     /* If it is a function, stores the array of tokens of arguments. 
        Else, it is NULL. Array must end with _SAP_END_OF_STMT.
