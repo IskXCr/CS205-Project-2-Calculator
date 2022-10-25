@@ -600,12 +600,30 @@ static sap_num _sap_sub_impl(sap_num op1, sap_num op2, int scale_min, sign op_si
             borrow = 0;
         }
     }
-    if (borrow >= 1)
+
+    /* If extra borrow digit present, then either the subtraction still needs to be performed
+       on the remaining result, or the subtraction is invalid. */
+    if (borrow >= 1) 
         if (op2->n_len < tmp->n_len)
-            *(tmp->n_val + tmp->n_len - op2->n_len - 1) -= borrow;
+        {
+            /* Subtracting on the remaining result */
+            for (int i = op2->n_len; i < tmp->n_len; ++i)
+            {
+                char *p = tmp->n_val + tmp->n_len - i - 1;
+                if (*p < borrow)
+                {
+                    *p += 10 - borrow;
+                    borrow = 1;
+                }
+                else
+                {
+                    *p -= borrow;
+                    borrow = 0;
+                }
+            }
+        }
         else
         {
-            sap_free_num(&tmp);
             sap_warn("Internal error: subtraction_impl performed on invalid operands: ", 3,
                      sap_num2str(op1), TRUE,
                      " and ", FALSE,
@@ -837,7 +855,10 @@ static void _sap_self_increase(sap_num op1, int int_offset)
         }
     }
     if (carry == 1)
+    {
         sap_warn("Self increase error: storage not enough: ", 1, sap_num2str(op1), TRUE);
+        exit(0);
+    }
 }
 
 /* Internal simple division for handling small numbers. High complexity. Signs are ignored. */
@@ -862,13 +883,14 @@ static sap_num _sap_simple_high_prec_div(sap_num dividend, sap_num divisor, int 
     sap_num tmp = sap_replicate_num(dividend);
     sap_num tmp2;
 
-    while (_sap_compare_impl(tmp, divisor, FALSE) >= 0)
+    while (_sap_compare_impl(tmp, divisor, FALSE) >= 0) /* Deal with integral part first */
     {
         tmp2 = _sap_sub_impl(tmp, divisor, 0, POS);
         sap_free_num(&tmp);
         tmp = tmp2;
         _sap_self_increase(result, 0);
     }
+
     if (scale > 0) /* If fractional result are required. */
     {
         for (int i = 1; i <= scale; ++i)
