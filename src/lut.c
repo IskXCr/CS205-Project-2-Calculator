@@ -170,6 +170,15 @@ void lut_reset_all(lut_table table)
 {
     for (int i = 0; i < table->capacity; ++i)
         if (*(table->entries + i) != NULL)
-            _lut_free_node(table->entries + i);
+        {
+            lut_node t = *(table->entries + i);
+            while (t->next != NULL)
+            {
+                lut_node next = t->next;
+                _lut_free_node(&t);
+                t = next;
+            }
+            _lut_free_node(&t);
+        }
     memset(table->entries, 0, table->capacity * sizeof(lut_node)); /* Set all entries to NULL. */
 }

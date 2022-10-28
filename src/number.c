@@ -11,6 +11,8 @@
 
 #include "number.h"
 #include "utils.h"
+#include "sapdefs.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -272,7 +274,8 @@ sap_num sap_int2num(int val)
    The caller must call free() on the char pointer after usage. */
 char *sap_num2str(sap_num op)
 {
-    char *tmp;
+    char *tmp; /* the output char array */
+    int size;  /* Size of tmp in byte */
     if (op == NULL || sap_is_zero(op))
     {
         tmp = (char *)malloc(2);
@@ -282,9 +285,13 @@ char *sap_num2str(sap_num op)
         *(tmp + 1) = '\0';
         return tmp;
     }
-    tmp = (char *)malloc((op->n_sign == NEG ? 1 : 0) + op->n_len + (op->n_scale <= 0 ? 0 : 1) + op->n_scale + 1);
+    size = (op->n_sign == NEG ? 1 : 0) + op->n_len + (op->n_scale <= 0 ? 0 : 1) + op->n_scale + 1;
+    tmp = (char *)malloc(size);
     if (tmp == NULL)
         out_of_memory();
+
+    if (debug)
+        printf("[SAP_NUMBER] Output size = %d\n", size);
 
     /* Start copying. */
     char *buf = tmp, *ptr = op->n_val; /* buf for placing the character, ptr for walking through the digits */
