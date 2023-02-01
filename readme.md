@@ -11,7 +11,7 @@
 
 ## Part 1 - Analysis
 
-The project asks the student to write a calculator that is much better than that in Project 1.
+The problem asks to write a calculator that is much better than that in Project 1.
 
 The whole project is written in ``C``.
 
